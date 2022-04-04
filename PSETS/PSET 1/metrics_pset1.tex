@@ -1,0 +1,304 @@
+%
+\documentclass[12pt,notitlepage]{article}
+\usepackage{bm}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{yhmath}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{pdflscape}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{dsfont}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{marvosym}
+\usepackage{float}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{pdflscape}
+\usepackage[hyphenbreaks]{breakurl}
+\usepackage[hyphens]{url}
+\usepackage{setspace}
+\usepackage{comment}
+\usepackage{epigraph}
+\usepackage{bm}
+\usepackage{textcomp}
+\usepackage{diagbox}
+\usepackage{bbm}
+\usepackage{verbatim}
+\usepackage[framemethod=tikz]{mdframed}
+\usepackage{subcaption}
+\usepackage{caption}
+\usepackage{lipsum}
+\usepackage{enumerate}
+\usepackage[shortlabels]{enumitem}
+\setlength{\epigraphrule}{0pt}
+\setlength\parindent{0pt}
+\renewcommand{\baselinestretch}{1.25}
+
+\setcounter{MaxMatrixCols}{10}
+
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+\usepackage{natbib,hyperref}
+\bibliographystyle{chicago}  
+
+\newcommand{\I}{\mathbb{I}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Ll}{\mathrm{L}}
+\renewcommand{\L}{\mathbb{L}}
+\newcommand{\indic}{\mathds{1}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Cov}{\mathrm{Cov}}
+\newcommand{\Corr}{\mathrm{Corr}}
+\newcommand{\sgn}{\text{sgn}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\supp}{\mathrm{supp}}
+\newcommand{\notimplies}{\mathrel{{\ooalign{\hidewidth$\not\phantom{=}$\hidewidth\cr$\implies$}}}}
+\newcommand{\var}{\mathrm{var}}
+\newcommand{\cov}{\mathrm{cov}}
+\newcommand{\corr}{\mathrm{corr}}
+\newcommand{\mse}{\mathrm{MSE}}
+\newcommand{\bias}{\mathrm{Bias}}
+\newcommand{\ind}{\perp\!\!\!\!\!\perp} 
+\newcommand\dapprox{\stackrel{\mathclap{\tiny \mbox{d}}}{\approx}}
+\newcommand\papprox{\stackrel{\mathclap{\tiny \mbox{p}}}{\approx}}
+\newcommand\pconverge{\stackrel{\mathclap{\tiny \mbox{p}}}{\to}}
+\newcommand\dconverge{\stackrel{\mathclap{\tiny \mbox{d}}}{\to}}
+
+\topmargin=-1.5cm \textheight=23cm \oddsidemargin=0.5cm
+\evensidemargin=0.5cm \textwidth=15.5cm
+\newtheorem{ass}{Assumption}
+\newtheorem{definit}{Definition}
+\newtheorem{prop}{Proposition}
+\newtheorem{thm}{Theorem}
+\newtheorem{lem}{Lemma}
+\newtheorem{conj}{Conjecture}
+\newtheorem{cor}{Corollary}
+\newtheorem{rem}{Remark}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+\renewcommand{\thesubsubsection}{\arabic{section}.\arabic{subsection}.\arabic{subsubsection}}
+
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+
+\usepackage{epsfig,hyperref}
+
+\hypersetup{
+	pdftitle={ECMA 31320 Pset 1},    % title
+	pdfauthor={Noah Sobel-Lewin Chris Liao},     % author
+	pdfnewwindow=true,      % links in new window
+	colorlinks=true,       % false: boxed links; true: colored links
+	linkcolor=blue,          % color of internal links
+	citecolor=red,        % color of links to bibliography
+	filecolor=black,      % color of file links
+	urlcolor=blue           % color of external links
+}
+
+\allowdisplaybreaks
+
+\begin{document}
+	
+	\title{ECMA 31320 Pset 1}
+	\author{\textsc{Chris Liao} \\ \textsc{Noah Sobel-Lewin}}
+	\date{April 4, 2022}
+	\maketitle
+\section*{1}
+\subsection*{a}
+Our sequence is $\overline{X}_{(N)} = \frac{1}{N} \sum_{i=1}^N X_i$. As $N$ increases in size, then by the weak law of large numbers, $\overline{X}_{(N)} \stackrel{p}{\to} \E[X] = p$
+\subsection*{b}
+The conditions of the ``classical'' Central Limit Theorem are that $(X_1, \cdots, X_N)$ are iid and that $X_i$ has finite mean and variance. We know that each $X_i$ is Bernoulli$(p)$ , and that the infected statuses of each individual are mutually independent so our sample $(X_1, \cdots, X_N)$ is iid. Further, because $X_i$ are Bernoulli$(p)$, they have finite mean $(p)$ and variance $(p(1-p))$. 
+\subsection*{c}
+First, here are some basic facts
+\begin{equation}
+    \E[X_i] = p \quad \E[\overline{X}_{(N)}] = p \nonumber
+\end{equation}
+\begin{equation}
+    \Var[X_i] = p(1-p) \quad \Var[\overline{X}_{(N)}] = \frac{p(1-p)}{n} \nonumber
+\end{equation}
+Next, since  $(X_1, \cdots, X_N)$ is iid, by the central limit theorem,
+\begin{equation*}
+    \frac{\overline{X}_{(N)}-p_0}{\sqrt{\frac{p_0(1-p_0)}{N}}} \equiv Z_N \stackrel{d}{\to} \N(0,1)
+\end{equation*}
+Therefore we reject the null hypothesis if our test statistic 
+\begin{equation*}
+    \frac{\overline{X}_{(N)}-p_0}{\sqrt{\frac{p_0(1-p_0)}{N}}} \equiv Z_N > \Phi^{-1}(1-\alpha)
+\end{equation*}
+which is equivalent to
+\begin{equation*}
+    \overline{X}_{(N)} > p_0 + \sqrt{\frac{p_0(1-p_0)}{N}}\Phi^{-1}(1-\alpha)
+\end{equation*}
+Thus, the rejection region associated with this test is $(p_0 + \sqrt{\frac{p_0(1-p_0)}{N}}\Phi^{-1}(1-\alpha), 1]$ since $X_{(N)}$ is bounded above by 1.
+\subsection*{d}
+Define $$k  = \sum_{i=1}^N \mathbb{I}[X_i = 1]$$ where $k$ is the number of infected people in our sample. We know that the distribution of the number of infected people is distributed Binomial$(N,p)$. Our goal therefore is to find the smallest value $k$ such that $$\sum_{i=k}^N \binom{N}{i} p_0^i (1-p_0)^{N-i} < \alpha$$
+Define $$k_{min} = \min \left \{\sum_{i=k}^N \binom{N}{i} p_0^i (1-p_0)^{N-i} < \alpha \mid k \in \N \right \}$$
+Then, we reject the null hypothesis if $k > k_{min}$. We also know that this is true: $$\overline{X_{(N)}} = \frac1N \sum_{i=1}^N X_i = \frac{k}{N} > \frac{k_{min}}{N}$$ Thus, we can rewrte the statement as the following - we reject the null hypothesis if $$\overline{X_{(N)}} >  \frac{k_{min}}{N}$$ As such, the rejection region associated with this test is $(\frac{k_{min}}{N}, 1]$ as $X_{(N)}$ is bounded above by 1.
+\subsection*{e}
+Under the assumption that the null hypothesis is false and that $p=p_1$ is true, the definition of having a type II error of $\beta$ is that
+$$\beta \leq \mathbb{P}\left(\overline{X_{(N)}} < p_0 + \sqrt{\frac{p_0(1-p_0)}{N}}\Phi^{-1}(1-\alpha)\right)$$
+or that the probability our test statistic does not fall in the rejection region is less than or equal to beta, when the null hyopthesis is false.
+Since $(X_1, \cdots, X_N)$ is iid, by the central limit theorem then we can do the following
+\begin{align*}
+    \mathbb{P}\left(\overline{X_{(N)}} < p_0 + \sqrt{\frac{p_0(1-p_0)}{N}}\Phi^{-1}(1-\alpha)\right) = \beta \iff\\
+    \mathbb{P}\left(\frac{\overline{X_{(N)}} - p_1}{\sqrt{\frac{p_1(1-p_1)}{N}}} < \frac{p_0 - p_1 + \sqrt{\frac{p_0(1-p_0)}{N}}\Phi^{-1}(1-\alpha)}{\sqrt{\frac{p_1(1-p_1)}{N}}}\right) = \beta \iff \\
+    \text{ where we know $\frac{\overline{X_{(N)}} - p_1}{\sqrt{\frac{p_1(1-p_1)}{N}}} \sim \mathcal{N}(0, 1)$ so the next line follows by the CLT}\\
+    \Phi\left(\frac{p_0 - p_1 + \sqrt{\frac{p_0(1-p_0)}{N}}\Phi^{-1}(1-\alpha)}{\sqrt{\frac{p_1(1-p_1)}{N}}}\right) = \beta \iff \\
+    \sqrt{\frac{p_0(1-p_0)}{N}}\Phi^{-1}(1-\alpha) - \Phi^{-1}(\beta)\sqrt{\frac{p_1(1-p_1)}{N}} =  p_1 - p_0 \iff \\
+    \sqrt{N} = \frac{\sqrt{p_0(1-p_0)}\Phi^{-1}(1 - \alpha) - \Phi^{-1}(\beta) \sqrt{p_1(1-p_1)}}{p_1 - p_0} \iff \\
+    N = \left(\frac{\sqrt{p_0(1-p_0)}\Phi^{-1}(1 - \alpha) - \Phi^{-1}(\beta) \sqrt{p_1(1-p_1)}}{p_1 - p_0}\right)^2
+\end{align*}
+Thus, if $H_1:p = p_1 > p_0$ were true then I would purchase $N$ test kits where $$N =\left \lceil \left(\frac{\sqrt{p_0(1-p_0)}\Phi^{-1}(1 - \alpha) - \Phi^{-1}(\beta) \sqrt{p_1(1-p_1)}}{p_1 - p_0}\right)^2\right\rceil$$
+\subsection*{f}
+First, recall from part $d$ that for every $N$ there is some $k_{min}$ where $(\frac{k_{min}}{N}, 1]$ is the rejection region. Separately, by the definition of type II error, we also want that 
+$$\sum_{i=1}^{k_{min}} \binom{N}{i} p_1^i(1-p_1)^{N-i} \leq \beta$$
+Thus, our goal is to find the smallest $N$ such that 
+$$\sum_{i=1}^{k_{min}} \binom{N}{i} p_1^i(1-p_1)^{N-i} \leq \beta$$
+where $k_{min} = \min\{\sum_{i=k}^N \binom{N}{i} p_0^i (1-p_0)^{N-i} < \alpha \mid k \in \N\}$. This problem devolves into solving a two-system set of equations with two unknowns, $k_{min}$ and $N$.
+\subsection*{g}
+Here is how we computationally identified $N$. First, we looped through a set of potential $N$ from 1 to 300. Then, for each $N$, we drew 1000 samples of size $N$ from a Bernoulli distribution of $p_0$ and found the sample mean for each sample. Then, using our collection of sample means we found the lower bound of the rejection region - the (1-$\alpha$)-th percentile of our collection of sample means, henceforth known as $\overline{X_{(\alpha)}}$. Next, we drew 1000 samples of size $N$ from a Bernoulli distribution of $p_1$ and took the sample mean. Using our collection of new sample means, we found that smallest value of the left-hand side of a rejection region satisfying a type II error of $\beta$, henceforth known as $\overline{X_{(\beta)}}$. Our value of $N$ would be valid if $\overline{X_{(\beta)}} > \overline{X_{(\alpha)}}$ as that means that at least $1-\beta$ of our observations were rejected. Our aim is to find the smallest valid $N$ such that we can construct a threshold that will guarantee type I error is less than $\alpha$ and type II error is less than $\beta$ given $p_0$ and $p_1$. \\
+See section $h$ with a table with all our results
+\newpage
+\subsection*{h}
+% Table created by stargazer v.5.2.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
+% Date and time: Sun, Apr 03, 2022 - 17:46:07
+\begin{table}[!htbp] \centering 
+  \caption{} 
+  \label{} 
+\begin{tabular}{@{\extracolsep{5pt}} cccccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & $\alpha$ & $\beta$ & $p_0$ & $p_1$ & Monte Carlo & Binomial (No Asymptotic) & CLT \\ 
+\hline \\[-1.8ex] 
+1 & $0.050$ & $0.100$ & $0.001$ & $0.100$ & $22$ & $22$ & $20$ \\ 
+2 & $0.050$ & $0.100$ & $0.001$ & $0.150$ & $15$ & $15$ & $12$ \\ 
+3 & $0.050$ & $0.100$ & $0.001$ & $0.200$ & $11$ & $11$ & $9$ \\ 
+4 & $0.050$ & $0.100$ & $0.050$ & $0.100$ & $232$ & $233$ & $221$ \\ 
+5 & $0.050$ & $0.100$ & $0.050$ & $0.150$ & $76$ & $77$ & $67$ \\ 
+6 & $0.050$ & $0.100$ & $0.050$ & $0.200$ & $38$ & $38$ & $34$ \\ 
+7 & $0.050$ & $0.200$ & $0.001$ & $0.100$ & $15$ & $16$ & $10$ \\ 
+8 & $0.050$ & $0.200$ & $0.001$ & $0.150$ & $10$ & $10$ & $6$ \\ 
+9 & $0.050$ & $0.200$ & $0.001$ & $0.200$ & $8$ & $8$ & $4$ \\ 
+10 & $0.050$ & $0.200$ & $0.050$ & $0.100$ & $158$ & $169$ & $150$ \\ 
+11 & $0.050$ & $0.200$ & $0.050$ & $0.150$ & $52$ & $52$ & $44$ \\ 
+12 & $0.050$ & $0.200$ & $0.050$ & $0.200$ & $27$ & $27$ & $22$ \\ 
+\hline \\[-1.8ex] 
+\end{tabular} 
+\end{table} 
+In general, the comparisons are quite similar, especially across smaller estimates of $N$. The Binomial and Monte Carlo estimates are especially similar for estimates $N < 60$. However, the CLT estimates tend to consistently be less than the Binomial estimates and the difference between them grows as beta grows. In general, the Monte Carlo and Binomial results are pretty similar, although for large $N$ and large $\beta$ then the difference between them also grows.
+\textbf{}
+\section*{Problem 2}	
+\subsection*{a}
+$\beta_{\text{OLS}}$ solves the best linear prediction problem of $Y$ given $X$. Hence, 
+\begin{equation*}
+    \beta_{\text{OLS}} = \arg\min_{b}\E[(Y-X'b)^2]
+\end{equation*}
+By the first order conditions of this minimization problem we know:
+\begin{align*}
+    0 &= \frac{\partial}{\partial \beta} \E[(Y-X'\beta)^2] \\
+    &= \E[\frac{\partial}{\partial \beta} (Y-X'\beta)^2] \\
+    &= 2\E[XY-XX'\beta] \\
+    &= 2(\E[XY]-\E[XX']\beta)
+\end{align*}
+Where the first equality follows by first order conditions. The second equality from the dominated convergence theorem. The third equality from taking the derivative. The fourth from the linearity of expectation.
+\begin{equation*}
+    0 = 2(\E[XY]-\E[XX']\beta) \iff \E[XY] = \E[XX']\beta
+\end{equation*}
+\subsection*{b}
+The gram matrix, $G \equiv \E[XX']$, is a linear map mapping from $\R^p \to \R^p$. $G$ is not invertible, so therefore $\text{Rank}(G) < p$. By the Rank-nullity theorem, therefore $\text{Nullity}(G) > 0$. This implies that the set of vectors, $S$, for which each $v \in S$ satisfies $\E[XX']v = 0$, is infinitely large because the dimension of the space of vectors for which this is the case is non-zero. 
+\subsection*{c}
+Yes. Consider $v_1 \neq 0_p \in S$. Let $\beta_1 \equiv \beta_0 + v_1$ . By construction, $\beta_1 \neq \beta_0$. Now,
+\begin{align*}
+    &\E[XX']\beta_1 = \E[XX'](\beta_0 + v_1) = \E[XX']\beta_0 + \E[XX']v_1 = \E[XX']\beta_0 = \E[XY]
+\end{align*}
+Where the third equality follows from the fact that $v_1 \in S$. We have found two coefficients, $\beta_1 \neq \beta_0$ , that satisfies the equation.
+\subsection*{d}
+\begin{enumerate}
+    \item We are interested in the statistical relationship between an individual's wages ($Y$) and whether or not each parent attended college for modern-day individuals. 
+    \item Let,
+    \begin{equation*}
+        X \equiv 
+        \begin{bmatrix}
+        1 & X_1 & X_2 
+        \end{bmatrix}'
+    \end{equation*}
+    Where $X_1$ is an indicator if an individual's mother went to college and $X_2$ is an indicator if an individual's father went to college. Because of matching, it is likely that college-educated individuals tend to marry college-educated individuals and non-college-educated individuals tend to marry non-college-educated individuals. Therefore, in a small sample, it is not implausible to find that $\bm{x_1} = \bm{x_2}$ in the data — where $\bm{x_i}$ is a vector of realizations of $X_i$ especially if we consider the modern era where an increasing proportion of the population is college educated.
+    \item We are interested in the education of each parent separately. Possibly, maternal or paternal education might have a differing impact on a child's wages because one's relationship with the mother is frequently different from their relationship with their father and different patents  interact with the child differently, which creates variation in future wages. 
+    We want to include a constant because we are interested in the expected value of one's wage if neither of their parents went to college and because we expect that this value is nonzero. 
+    \item If one had unlimited data on $X$ and $Y$, they could determine the population regression coefficient on $X$ because $\E[XX']$ is invertible because, while highly correlated, $X_1$ is not a linear function of $X_2$. Therefore, using the equation above, 
+    \begin{equation*}
+        \beta = \E[XY]\E[XX']^{-1}.
+    \end{equation*}
+\end{enumerate}
+
+\section*{3}
+\subsection*{a}
+\begin{align*}
+    \bm{X'X} &= 
+    \bm{X'}
+    \begin{bmatrix}
+    x_1 & \cdots & x_n
+    \end{bmatrix} \\
+    &= \begin{bmatrix}
+    \bm{X'}x_1 & \cdots & \bm{X'}x_n
+    \end{bmatrix} \\
+    &= \begin{bmatrix}
+    \begin{bmatrix}
+    x_1'x_1 \\ \vdots \\ x_n'x_1 
+    \end{bmatrix} & 
+    \cdots &  
+    \begin{bmatrix}
+    x_1'x_n \\ \vdots \\ x_n'x_n
+    \end{bmatrix}
+    \end{bmatrix} \\
+    &= \begin{bmatrix}
+    \sum_{i=1}^N x_{1i}x_{1i} & \hdots & \sum_{i=1}^N x_{1i}x_{Ni} \\
+    \vdots & \ddots & \vdots \\
+    \sum_{i=1}^N x_{Ni}x_{1i} & \hdots & \sum_{i=1}^N x_{Ni}x_{Ni}
+    \end{bmatrix} \\ 
+    &= \sum_{i=1}^N \begin{bmatrix}
+     x_{1i}x_{1i} & \hdots &  x_{1i}x_{Ni} \\
+    \vdots & \ddots & \vdots \\
+     x_{Ni}x_{1i} & \hdots & x_{Ni}x_{Ni}
+    \end{bmatrix} \\ 
+    &= \sum_{i=1}^N x_ix_i' \\ 
+\end{align*}
+
+\subsection*{b}
+Let $\bm{X}$ be a data matrix $\in \R^{T \times K}$ with $x_i' \in \R^K$ for $i \in \{1, \dots, T\}$
+\begin{equation*}
+    \bm{X} \equiv 
+    \begin{bmatrix}
+    x_1 \\ \vdots \\ x_T
+    \end{bmatrix}
+\end{equation*}
+Now, define $X \in \R^K$  being realizations of $X$ - note that $X$ is the population analog of $x_i'$.
+\begin{equation*}
+    \E[XX'] = \E \begin{bmatrix}
+    x_{1}x_{1} & \hdots &  x_{1}x_{K} \\
+    \vdots & \ddots & \vdots \\
+     x_{K}x_{1} & \hdots & x_{K}x_{K}
+    \end{bmatrix} 
+\end{equation*} 
+Note that in the expression above, $x_i$ refer to components of $X$ in the population. 
+The sample analogue for the second expression is naturally 
+
+\begin{equation*}
+\frac{1}{T}\sum_{i=1}^T \begin{bmatrix}
+     x_{1i}x_{1i} & \hdots &  x_{1i}x_{Ti} \\
+    \vdots & \ddots & \vdots \\
+     x_{Ti}x_{1i} & \hdots & x_{Ti}x_{Ti}
+    \end{bmatrix}  = \frac1T \sum_{i=1}^T x_i'x_i\\
+\end{equation*}
+We have shown above that $\sum_{i=1}^T x_i'x_i = \bm{X'X}$ so the expression above equals
+\begin{equation*}
+    \frac{1}{T}\bm{X'X}
+\end{equation*}
+Therefore the sample analogue of $\E[XX']$ is $\frac{1}{T}\bm{X'X}$.
+\end{document}
+

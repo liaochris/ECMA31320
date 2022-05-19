@@ -22,7 +22,7 @@ Y1981_codes <- c("V7712", "V7885", "V7713", "V7886", "V7587", "ER30351", "V7555"
 
 
 psid <- psid[Y1968 %in% Y1968_codes | Y1969 %in% Y1969_codes | Y1975 %in% Y1975_codes | Y1981 %in% Y1981_codes]
-selcols <- paste("Y",1968:1989, sep = "")
+selcols <- paste("Y",1968:1995, sep = "")
 merged <- str_trim(unite(psid[, ..selcols], merged, sep = " ")$merged)
 psid[, final:= merged]
 paste(psid$final, collapse = " ")

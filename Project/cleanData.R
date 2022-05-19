@@ -24,14 +24,12 @@ PSID_raw[,person := paste(ER30001, ER30002, sep = "_")]
 all_columns <- data.table(setNames(stack(lapply(PSID_raw, label))[2:1], c("Varcode", "Variables")))
 all_columns[,NewVarcode := Varcode]
 
-release_code <- as.character(all_columns[Variables == "RELEASE NUMBER" & grepl("ER", Varcode), Varcode])
 interview_number <- as.character(all_columns[grepl("INTERVIEW NUMBER", Variables) & grepl("V", Varcode), Varcode])
-iw_date <- as.character(all_columns[grepl("DATE OF", Variables), Varcode])
 #seq_number <- as.character(all_columns[grepl("SEQUENCE NUMBER", Variables), Varcode])
 acc_code <- as.character(all_columns[grepl("ACC", Variables), Varcode])
 county_code <- as.character(all_columns[grepl("COUNTY", Variables), Varcode])
 
-drop <- c(release_code, acc_code, county_code, "V3529", iw_date, "ER30002")
+drop <- c(acc_code, county_code, "V3529", iw_date, "ER30002", "ER30000")
 
 remcols <- colnames(PSID_raw)[colnames(PSID_raw) %ni% drop]
 PSID_raw <- PSID_raw[,..remcols]
@@ -57,28 +55,34 @@ all_columns[Varcode == "V11651", Variables := "OCC:3 DIG H-E"]
 all_columns[Varcode == "V12014", Variables := "OCC:3 DIG W-E "]
 
 #renamed cols
-renamed_cols <- c(renameVars("RELEASE NUMBER", "RELEASE", 68:89),
-                  renameVars("SEQUENCE NUMBER", "SEQUENCE NUMBER", 69:89),
-                  renameVars("STATE", "STATE", 68:89),
+renamed_cols <- c(renameVars("RELEASE NUMBER", "RELEASE", 68:95),
+                  renameVars("SEQUENCE NUMBER", "SEQUENCE NUMBER", 69:95),
+                  renameVars("STATE", "STATE", 68:95),
                   renameVars("OCCUPATION HEAD", "OCCUPATION OF HEAD", 68:80),
                   renameVars("OCCUPATION HEAD", "OCC:3DIG\\(H-E\\)", 81:83),
                   renameVars("OCCUPATION HEAD", "OCC:3DIGT", 84),
-                  renameVars("OCCUPATION HEAD", "OCC:3 DIG H-E", 85:89),
+                  renameVars("OCCUPATION HEAD", "OCC:3 DIG H-E", 85:92),
+                  renameVars("OCCUPATION HEAD", "OCCUPATION: 3 DIGIT \\(HD-E\\)", 93:95),
                   renameVars("OCCUPATION WIFE", "OCCUPATION OF WIFE", 68:80),
                   renameVars("OCCUPATION WIFE", "OCCUPATION  \\(WF-E\\)", 81:84),
-                  renameVars("OCCUPATION WIFE", "OCC:3 DIG W-E", 85:89),
+                  renameVars("OCCUPATION WIFE", "OCC:3 DIG W-E", 85:92),
+                  renameVars("OCCUPATION HEAD", "OCCUPATION: 3 DIGIT \\(WF-E\\)", 93:95),
                   renameVars("INDUSTRY HEAD", "INDUSTRY   OF HEAD", 68:80),
-                  renameVars("INDUSTRY HEAD", "IND:3 DIGT\\(H-E\\)", 81:89),
+                  renameVars("INDUSTRY HEAD", "IND:3 DIGT\\(H-E\\)", 81:92),
+                  renameVars("INDUSTRY HEAD", "INDUSTRY: 3 DIGIT \\(HD-E\\)", 93:95),
                   renameVars("INDUSTRY WIFE", "INDUSTRY   OF WIFE", 68:80),
                   renameVars("INDUSTRY WIFE", "INDUSTRY     \\(WF-E\\)", 81:84),
-                  renameVars("INDUSTRY WIFE", "MAIN IND:3 DIGT\\(W-E\\)", 85:89),
+                  renameVars("INDUSTRY WIFE", "MAIN IND:3 DIGT\\(W-E\\)", 85:92),
+                  renameVars("INDUSTRY HEAD", "INDUSTRY: 3 DIGIT \\(WF-E\\)", 93:95),
                   renameVars("INDIVIDUAL WEIGHT", "INDIVIDUAL WEIGHT", 68:89),
-                  renameVars("FAMILY WEIGHT", "WEIGHT$", 68:89),
-                  renameVars("RELATION TO HEAD", "RELATION", 68:89),
-                  renameVars("AGE", "AGE OF INDIVIDUAL", 68:89),
-                  renameVars("MARITAL PAIRS INDICATORS", "MARR PAIRS", 68:87),
-                  renameVars("MARITAL PAIRS INDICATORS", "MARITAL INDICATOR-IND", 88:89),
-                  renameVars("YEAR MOVED IN/OUT", "YEAR MOVED", 68:89),
+                  renameVars("INDIVIDUAL WEIGHT", "IND WEIGHT", 90:92),
+                  renameVars("FAMILY WEIGHT", "WEIGHT$", 68:92),
+                  renameVars("RELATION TO HEAD", "RELATION", 68:95),
+                  renameVars("AGE", "AGE OF INDIVIDUAL", 68:95),
+                  renameVars("MARITAL PAIRS INDICATORS", "MARR PAIRS", c(68:87, 92)),
+                  renameVars("MARITAL PAIRS INDICATORS", "MARITAL INDICATOR-IND", 88:91),
+                  renameVars("MARITAL PAIRS INDICATORS", "MARITAL PAIRS", 93:95),
+                  renameVars("YEAR MOVED IN/OUT", "YEAR MOVED", 68:95),
                   renameVars("ANNUAL RENT PAYMENT", "RENT P", 68:69),
                   renameVars("ANNUAL RENT PAYMENT", "ANNUAL RENT$", 70:75),
                   renameVars("ANNUAL RENT PAYMENT", "          C12", 76),

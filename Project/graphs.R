@@ -1,77 +1,38 @@
-# Import libraries
 library(data.table)
-library(haven)
-library(Hmisc)
-library(mets)
-library(sjlabelled)
-library(tidyr)
-library(stringr)
+library(ggplot2)
+library(did)
+library(scales)
+library(dplyr)
 
-# disable scientific notation
-options(scipen = 999)
+`%ni%` <- Negate(`%in%`)
 
-# Set to my personal directory - adjust accordingly
 setwd("~/Google Drive/Academic Work/Sophomore Year/Spring Quarter/Metrics Data Science/ECMA31320/Project/Data/")
 
-data <- fread("cleaned_psid.csv")
-data[, Year := Year + 1900]
-data[!is.na(as.numeric(`Unilateral Divorce`)),
-     year_center := Year - as.numeric(`Unilateral Divorce`)]
+df <- fread("final_regression_dataset.csv")
+df[, worked := ifelse(worked == TRUE, "working", "not working")]
 
-data[`RELATION TO HEAD` == 1, more_than_hs := max(EDUCATION,na.rm = TRUE) > 3, by = household]
-data[, more_than_hs := max(more_than_hs,na.rm = TRUE), by = household]
+df[,mean(`LABOR INCOME`, na.rm = TRUE), by = c("Year", "worked")] %>% 
+  ggplot(aes(x = Year, y = V1, color = worked, group = worked)) +
+  theme_classic() +
+  geom_line() +
+  ggtitle(" Mean Annual Salary Worked Over Time") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "Annual Salary ($ USD)", x = "Year", color = "Employment Status Year Law was Passed") +
+  guides(color=guide_legend(override.aes=list(fill=NA)))
 
-ggplot(data[!is.na(year_center)], aes(x=year_center)) + 
-  geom_density()
-
-#filtering for wife/ex-wife
-data[wife == 1 & abs(year_center) <= 5 &  `Equitable Distribution` == "community property", 
-     .(mean_woman_labor_income = mean(`LABOR INCOME`)),
-     by = c("year_center", "haschild")] %>%
-  ggplot(aes(x = year_center, y = mean_woman_labor_income, 
-             color = haschild, group = haschild)) +
-  geom_line()
-
-data[wife == 1 & abs(year_center) <= 5 &  `Equitable Distribution` == "community property" & 
-       `ANNUAL HOURS WORKED` > 0, 
-     .(mean_woman_labor_income = mean(`LABOR INCOME`)),
-     by = c("year_center", "haschild")] %>%
-  ggplot(aes(x = year_center, y = mean_woman_labor_income, 
-             color = haschild, group = haschild)) +
-  geom_line()
-
-data[wife == 1 & abs(year_center) <= 5 &  `Equitable Distribution` == "community property" & 
-       `ANNUAL HOURS WORKED` > 0, 
-     .(mean_woman_labor_income = mean(`LABOR INCOME`/`ANNUAL HOURS WORKED`)),
-     by = c("year_center", "haschild")] %>%
-  ggplot(aes(x = year_center, y = mean_woman_labor_income, 
-             color = haschild, group = haschild)) +
-  geom_line()
-
-#filtering for wife/ex-wife
-data[wife == 1 & abs(year_center) <= 5 &  `Equitable Distribution` == "community property", 
-     .(mean_woman_labor_income = mean(`LABOR INCOME`)),
-     by = c("year_center", "more_than_hs")] %>%
-  ggplot(aes(x = year_center, y = mean_woman_labor_income, 
-             color = more_than_hs, group = more_than_hs)) +
-  geom_line()
-
-data[wife == 1 & abs(year_center) <= 5 &  `Equitable Distribution` == "community property", 
-     .(mean_woman_labor_income = mean(ANNUAL HOURS WORKED > 0)),
-     by = c("year_center")] %>%
-  ggplot(aes(x = year_center, y = mean_woman_labor_income, 
-             color = more_than_hs, group = more_than_hs)) +
-  geom_line()
-
-data[wife == 1 & abs(year_center) <= 5 &  `Equitable Distribution` == "community property", 
-     .(divorce = mean(`MARITAL STATUS` == 4)),
-     by = c("year_center")] %>%
-  ggplot(aes(x = year_center, y = divorce)) +
-  geom_line()
-
-data[wife == 1 & abs(year_center) <= 5 &  `Equitable Distribution` == "community property", 
-     .(divorce = mean(`MARITAL STATUS` == 4)),
-     by = c("year_center")] %>%
-  ggplot(aes(x = year_center, y = divorce)) +
-  geom_line()
-
+df[,mean(`LABOR INCOME`, na.rm = TRUE), by = c("Year")] %>% 
+  ggplot(aes(x = Year, y = V1)) +
+  theme_classic() +
+  geom_line() +
+  ggtitle(" Mean Annual Salary Worked Over Time") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "Annual Salary ($ USD)", x = "Year") +
+  guides(color=guide_legend(override.aes=list(fill=NA)))

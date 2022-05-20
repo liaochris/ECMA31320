@@ -85,6 +85,7 @@ res_clean_wife[, hasHighSchool := as.numeric(max(`EDUCATION`, na.rm = TRUE)
 ids <- res_clean_wife[`ANNUAL HOURS WORKED` > 0 & 
                         Year == `Unilateral Divorce Year`, id]
 res_clean_wife[, worked := id %in% ids]
+
 # had income
 ids <- res_clean_wife[`LABOR INCOME` > 0  & Year == `Unilateral Divorce Year`, id]
 res_clean_wife[, highearning := id %in% ids]
@@ -152,7 +153,7 @@ ggdid(base_c_est)
 
 
 
-####################### husband hours specification, no controls ######################
+####################### husband hours, no controls ######################
 base_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
@@ -166,7 +167,7 @@ base_h_est <- aggte(base_h, type = "dynamic", na.rm = TRUE, min_e = -5,
                     max_e = 10)
 ggdid(base_h_est)
 
-####################### husband hours specification, with controls ####################
+####################### husband hours, with controls ####################
 base_h_c <- att_gt(yname = "HOUSEWORK HOURS",
                        gname = "Unilateral Divorce Year",
                        idname = "id",
@@ -242,59 +243,101 @@ est_hs_h <- aggte(hs_h, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
 ggdid(est_hs_h)
 
 
-####################### base specification, worked #######################
+
+
+####################### worked treatment, no controls #######################
+res_clean_wife_w <- res_clean_wife
+res_clean_wife_w[worked == 0, `Unilateral Divorce Year` := 0]
 worked <- att_gt(yname = "HOUSEWORK HOURS",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
                  tname = "Year",
-                 xformla = ~ 1,
-                 data = res_clean_wife[worked == 1],
+                 xformla = ~1,
+                 data = res_clean_wife_w,
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "nottreated")
+est_worked <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_worked)
+
+####################### worked treatment, controls #######################
+worked <- att_gt(yname = "HOUSEWORK HOURS",
+                 gname = "Unilateral Divorce Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~ STATE + `LABOR INCOME` + haschild + 
+                   `ANNUAL HOURS WORKED`,
+                 data = res_clean_wife_w,
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
                  control_group = "notyettreated")
 est_worked <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
 ggdid(est_worked)
 
-####################### base specification, no worked #######################
-noworked <- att_gt(yname = "HOUSEWORK HOURS",
-                   gname = "Unilateral Divorce Year",
-                   idname = "id",
-                   tname = "Year",
-                   xformla = ~ 1,
-                   data = res_clean_wife[worked == 0],
-                   est_method = "reg",
-                   weightsname = "FAMILY WEIGHT",
-                   control_group = "notyettreated")
-est_noworked <- aggte(noworked, type = "dynamic", na.rm = TRUE, min_e = -5, 
+####################### husband hours, worked treatment, no controls #######################
+worked_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
+                 gname = "Unilateral Divorce Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~1,
+                 data = res_clean_wife_w,
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "nottreated")
+est_worked_h <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, 
                       max_e = 10)
-ggdid(est_noworked)
+ggdid(est_worked_h)
 
-####################### husband hours specification, no worked ##################
-noworked_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
+####################### husband hours, worked treatment, controls #######################
+worked_h_c <- att_gt(yname = "HOUSEWORK HOURS_husband",
+                 gname = "Unilateral Divorce Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~ STATE + `LABOR INCOME` + haschild + 
+                   `ANNUAL HOURS WORKED`,
+                 data = res_clean_wife_w,
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "notyettreated")
+est_worked_h_c <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, 
+                        max_e = 10)
+ggdid(est_worked_h_c)
+
+####################### hours difference, worked treatment, no controls #######################
+worked_hdif <- att_gt(yname = "husband_dif",
+                      gname = "Unilateral Divorce Year",
+                      idname = "id",
+                      tname = "Year",
+                      xformla = ~ 1,
+                      data = res_clean_wife_w,
+                      est_method = "reg",
+                      weightsname = "FAMILY WEIGHT",
+                      control_group = "notyettreated")
+est_worked_hdif <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, 
+                         max_e = 10)
+ggdid(est_worked_hdif)
+
+####################### hours difference, worked treatment, controls #######################
+worked_hdif_c <- att_gt(yname = "husband_dif",
                      gname = "Unilateral Divorce Year",
                      idname = "id",
                      tname = "Year",
-                     xformla = ~ 1,
-                     data = res_clean_wife[worked == 0],
+                     xformla = ~ STATE + `LABOR INCOME` + haschild + 
+                       `ANNUAL HOURS WORKED`,
+                     data = res_clean_wife_w,
                      est_method = "reg",
                      weightsname = "FAMILY WEIGHT",
                      control_group = "notyettreated")
-est_noworked_h <- aggte(noworked_h, type = "dynamic", na.rm = TRUE, min_e = -5, 
-                      max_e = 10)
-ggdid(est_noworked_h)
-####################### husband hours specification, worked ####################
-worked_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
-                   gname = "Unilateral Divorce Year",
-                   idname = "id",
-                   tname = "Year",
-                   xformla = ~ 1,
-                   data = res_clean_wife[worked == 1],
-                   est_method = "reg",
-                   weightsname = "FAMILY WEIGHT",
-                   control_group = "notyettreated")
-est_worked_h <- aggte(worked_h, type = "dynamic", na.rm = TRUE, min_e = -5, 
+est_worked_hdif_c <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, 
                         max_e = 10)
-ggdid(est_worked_h)
+ggdid(est_worked_hdif_c)
+
+
+
+
+
+
+
 
 # do the treatment expansion
 

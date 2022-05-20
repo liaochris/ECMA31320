@@ -7,7 +7,7 @@ library(did)
 setwd("~/Google Drive/Academic Work/Sophomore Year/Spring Quarter/Metrics Data Science/ECMA31320/Project/Data/")
 
 ################################################################################
-############################# DATA LOGISTICS ###################################
+################## DATA LOGISTICS ###################################
 ################################################################################
 #import, sort data and select columns
 res_clean_raw <- fread("cleaned_psid.csv")
@@ -54,7 +54,7 @@ dropcols <- c("RELATION TO HEAD", "MARITAL STATUS", "wife")
 res_clean_wife[, (dropcols) := NULL]
 
 ################################################################################
-####################### SANT'ANNA CALLAWAY DATA PREP ###########################
+############ SANT'ANNA CALLAWAY DATA PREP ###########################
 ################################################################################
 
 # creating column that tells us the treatment yeat
@@ -109,12 +109,18 @@ res_clean_wife[, `Has Equitable Distribution` :=
 res_clean_wife[, hw_ratio := `HOUSEWORK HOURS`/`HOUSEHOLD HOUSEWORK HOURS`]
 res_clean_wife[, husband_dif := `HOUSEWORK HOURS_husband` - `HOUSEWORK HOURS`]
 
+#remove people who moved
+ids <- res_clean_wife[,length(unique(`Unilateral Divorce Year`)), 
+                      by = id][V1 == 1, id]
+res_clean_wife <- res_clean_wife[id %in% ids]
+
+fwrite(res_clean_wife, "final_regression_dataset.csv")
 
 ################################################################################
 ############################ SANT'ANNA CALLAWAY ################################
 ################################################################################
 
-####################### base specification, no controls ########################
+############ base specification, no controls ########################
 base <- att_gt(yname = "HOUSEWORK HOURS",
                gname = "Unilateral Divorce Year",
                idname = "id",
@@ -124,36 +130,33 @@ base <- att_gt(yname = "HOUSEWORK HOURS",
                est_method = "reg",
                weightsname = "FAMILY WEIGHT",
                control_group = "notyettreated")
-base_est <- aggte(out, type = "dynamic", na.rm = TRUE,
-                  min_e = -10, max_e = 10)
+base_est <- aggte(base, type = "dynamic", na.rm = TRUE,
+                  min_e = -5, max_e = 10)
 ggdid(base_est)
 # notes: doesn't change if you make it individual as opposed to family weights
 print(paste("overall att is", round(base_est$overall.att, 3), 
             "and standard errors are", round(base_est$overall.se, 3)))
 
-
-####################### base specification, with controls ########################
+############ base specification, with controls ######################
 base_c <- att_gt(yname = "HOUSEWORK HOURS",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
                  tname = "Year",
-                 xformla = ~ OCCUPATION + INDUSTRY + `ANNUAL HOURS WORKED` + 
-                    `LABOR INCOME` + haschild + `Has Equitable Distribution`,
+                 xformla = ~ `ANNUAL HOURS WORKED` +
+                    `LABOR INCOME` + haschild + `Has Equitable Distribution` +
+                   `ANNUAL HOURS WORKED_husband`,
                  data = res_clean_wife,
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
                  control_group = "notyettreated")
-base_c_est <- aggte(out, type = "dynamic", na.rm = TRUE,
-                    min_e = -10, max_e = 10)
+base_c_est <- aggte(base_c, type = "dynamic", na.rm = TRUE,
+                    min_e = -5, max_e = 10)
 ggdid(base_c_est)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(base_c_est$overall.att, 3), 
+            "and standard errors are", round(base_c_est$overall.se, 3)))
 
-
-
-
-
-
-
-####################### husband hours, no controls ######################
+############ husband hours, no controls ######################
 base_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
@@ -166,29 +169,38 @@ base_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
 base_h_est <- aggte(base_h, type = "dynamic", na.rm = TRUE, min_e = -5,
                     max_e = 10)
 ggdid(base_h_est)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(base_h_est$overall.att, 3), 
+            "and standard errors are", round(base_h_est$overall.se, 3)))
 
-####################### husband hours, with controls ####################
-base_h_c <- att_gt(yname = "HOUSEWORK HOURS",
+############ husband hours, with controls ##########################
+base_h_c <- att_gt(yname = "HOUSEWORK HOURS_husband",
                        gname = "Unilateral Divorce Year",
                        idname = "id",
                        tname = "Year",
-                       xformla = ~ OCCUPATION + INDUSTRY + `ANNUAL HOURS WORKED` + 
-                         `LABOR INCOME` + haschild + `Has Equitable Distribution`,
+                       xformla = ~  `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                     haschild + `Has Equitable Distribution` + 
+                     `ANNUAL HOURS WORKED_husband`,
                        data = res_clean_wife,
                        est_method = "reg",
                        weightsname = "FAMILY WEIGHT",
-                       control_group = "nevertreated")
+                       control_group = "notyettreated")
 est_base_h_c <- aggte(base_h_c, type = "dynamic", 
                       na.rm = TRUE, min_e = -5, max_e = 10)
 ggdid(est_base_h_c)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_base_h_c$overall.att, 3), 
+            "and standard errors are", round(est_base_h_c$overall.se, 3)))
 
 
-####################### base specification, no high school ####################
+############ base specification, no high school, control issues #####
 nohs <- att_gt(yname = "HOUSEWORK HOURS",
                gname = "Unilateral Divorce Year",
                idname = "id",
                tname = "Year",
-               xformla = ~ 1,
+               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                 haschild + `Has Equitable Distribution` +
+                 `ANNUAL HOURS WORKED_husband`,
                data = res_clean_wife[hasHighSchool == 0],
                est_method = "reg",
                weightsname = "FAMILY WEIGHT",
@@ -196,58 +208,111 @@ nohs <- att_gt(yname = "HOUSEWORK HOURS",
 est_nohs <- aggte(nohs, type = "dynamic", 
                   na.rm = TRUE, min_e = -5, max_e = 10)
 ggdid(est_nohs)
-# controls affect data availability, otherwise don't really affect results
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_nohs$overall.att, 3), 
+            "and standard errors are", round(est_nohs$overall.se, 3)))
 
-####################### base specification, high school #######################
+############ base specification, high school, control issues ########
 hs <- att_gt(yname = "HOUSEWORK HOURS",
              gname = "Unilateral Divorce Year",
              idname = "id",
              tname = "Year",
-             xformla = ~ 1,
+             xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+               haschild + `Has Equitable Distribution`  +
+               `ANNUAL HOURS WORKED_husband`,
              data = res_clean_wife[hasHighSchool == 1],
              est_method = "reg",
              weightsname = "FAMILY WEIGHT",
              control_group = "notyettreated")
-est_hs <- aggte(nohs, type = "dynamic", 
+est_hs <- aggte(hs, type = "dynamic", 
                   na.rm = TRUE, min_e = -5, max_e = 10)
 ggdid(est_hs)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_hs$overall.att, 3), 
+            "and standard errors are", round(est_hs$overall.se, 3)))
 
-####################### husband hours specification, no high school ####################
+############ husband hours, no high school, control issues ##########
 nohs_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
                  tname = "Year",
-                 xformla = ~ 1,
+                 xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                   haschild + `Has Equitable Distribution`  +
+                   `ANNUAL HOURS WORKED_husband`,
                  data = res_clean_wife[hasHighSchool == 0],
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
                  control_group = "notyettreated")
-est_nohs_h <- aggte(nohs, type = "dynamic", 
+est_nohs_h <- aggte(nohs_h, type = "dynamic", 
                     na.rm = TRUE, min_e = -5, max_e = 10)
 ggdid(est_nohs_h)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_nohs_h$overall.att, 3), 
+            "and standard errors are", round(est_nohs_h$overall.se, 3)))
 
-
-# controls affect data availability, otherwise don't really affect results
-
-####################### husband hours specification, high school #######################
+############ husband hours, high school, control issues #############
 hs_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
                gname = "Unilateral Divorce Year",
                idname = "id",
                tname = "Year",
-               xformla = ~ 1,
-               data = res_clean_wife[hasHighSchool == 0],
+               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                 haschild + `Has Equitable Distribution`  +
+                 `ANNUAL HOURS WORKED_husband`,
+               data = res_clean_wife[hasHighSchool == 1],
                est_method = "reg",
                weightsname = "FAMILY WEIGHT",
                control_group = "notyettreated")
 est_hs_h <- aggte(hs_h, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
 ggdid(est_hs_h)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_hs_h$overall.att, 3), 
+            "and standard errors are", round(est_hs_h$overall.se, 3)))
 
 
+############ base specification, high school treatment with controls
+res_clean_wife_h <- res_clean_wife
+res_clean_wife_h[hasHighSchool == 0, `Unilateral Divorce Year` := 0]
+hs_t <- att_gt(yname = "HOUSEWORK HOURS",
+               gname = "Unilateral Divorce Year",
+               idname = "id",
+               tname = "Year",
+               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                 haschild + `Has Equitable Distribution`  +
+                 `ANNUAL HOURS WORKED_husband`,
+               data = res_clean_wife_h,
+               est_method = "reg",
+               weightsname = "FAMILY WEIGHT",
+               control_group = "notyettreated")
+est_hs_t <- aggte(hs_t, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_hs_t)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_hs_t$overall.att, 3), 
+            "and standard errors are", round(est_hs_t$overall.se, 3)))
+
+############ husband hours, high school treatment, with controls ####
+hs_h_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
+               gname = "Unilateral Divorce Year",
+               idname = "id",
+               tname = "Year",
+               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                 haschild + `Has Equitable Distribution`  +
+                 `ANNUAL HOURS WORKED_husband`,
+               data = res_clean_wife_h,
+               est_method = "reg",
+               weightsname = "FAMILY WEIGHT",
+               control_group = "notyettreated")
+est_hs_h_t <- aggte(hs_h_t, type = "dynamic", na.rm = TRUE, min_e = -5, 
+                    max_e = 10)
+ggdid(est_hs_h_t)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_hs_h_t$overall.att, 3), 
+            "and standard errors are", round(est_hs_h_t$overall.se, 3)))
 
 
-####################### worked treatment, no controls #######################
+############ worked treatment, no controls #######################
 res_clean_wife_w <- res_clean_wife
 res_clean_wife_w[worked == 0, `Unilateral Divorce Year` := 0]
+
 worked <- att_gt(yname = "HOUSEWORK HOURS",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
@@ -256,25 +321,33 @@ worked <- att_gt(yname = "HOUSEWORK HOURS",
                  data = res_clean_wife_w,
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
-                 control_group = "nottreated")
-est_worked <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
-ggdid(est_worked)
-
-####################### worked treatment, controls #######################
-worked <- att_gt(yname = "HOUSEWORK HOURS",
-                 gname = "Unilateral Divorce Year",
-                 idname = "id",
-                 tname = "Year",
-                 xformla = ~ STATE + `LABOR INCOME` + haschild + 
-                   `ANNUAL HOURS WORKED`,
-                 data = res_clean_wife_w,
-                 est_method = "reg",
-                 weightsname = "FAMILY WEIGHT",
                  control_group = "notyettreated")
 est_worked <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
 ggdid(est_worked)
 
-####################### husband hours, worked treatment, no controls #######################
+print(paste("overall att is", round(est_worked$overall.att, 3), 
+            "and standard errors are", round(est_worked$overall.se, 3)))
+
+############ worked treatment, controls #######################
+worked_c <- att_gt(yname = "HOUSEWORK HOURS",
+                 gname = "Unilateral Divorce Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                   haschild + `Has Equitable Distribution`  +
+                   `ANNUAL HOURS WORKED_husband`,
+                 data = res_clean_wife_w,
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "notyettreated")
+est_worked_c <- aggte(worked_c, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_worked_c)
+
+print(paste("overall att is", round(est_worked_c$overall.att, 3), 
+            "and standard errors are", round(est_worked_c$overall.se, 3)))
+
+
+############ husband hours, worked treatment, no controls #######################
 worked_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
@@ -283,62 +356,303 @@ worked_h <- att_gt(yname = "HOUSEWORK HOURS_husband",
                  data = res_clean_wife_w,
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
-                 control_group = "nottreated")
-est_worked_h <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, 
+                 control_group = "notyetreated")
+est_worked_h <- aggte(worked_h, type = "dynamic", na.rm = TRUE, min_e = -5, 
                       max_e = 10)
 ggdid(est_worked_h)
+print(paste("overall att is", round(est_worked_h$overall.att, 3), 
+            "and standard errors are", round(est_worked_h$overall.se, 3)))
 
-####################### husband hours, worked treatment, controls #######################
+############ husband hours, worked treatment, controls #######################
 worked_h_c <- att_gt(yname = "HOUSEWORK HOURS_husband",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
                  tname = "Year",
-                 xformla = ~ STATE + `LABOR INCOME` + haschild + 
-                   `ANNUAL HOURS WORKED`,
+                 xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                   haschild + `Has Equitable Distribution`  +
+                   `ANNUAL HOURS WORKED_husband`,
                  data = res_clean_wife_w,
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
                  control_group = "notyettreated")
-est_worked_h_c <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, 
+est_worked_h_c <- aggte(worked_h_c, type = "dynamic", na.rm = TRUE, min_e = -5, 
                         max_e = 10)
 ggdid(est_worked_h_c)
 
-####################### hours difference, worked treatment, no controls #######################
-worked_hdif <- att_gt(yname = "husband_dif",
-                      gname = "Unilateral Divorce Year",
-                      idname = "id",
-                      tname = "Year",
-                      xformla = ~ 1,
-                      data = res_clean_wife_w,
-                      est_method = "reg",
-                      weightsname = "FAMILY WEIGHT",
-                      control_group = "notyettreated")
-est_worked_hdif <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, 
-                         max_e = 10)
-ggdid(est_worked_hdif)
+print(paste("overall att is", round(est_worked_h_c$overall.att, 3), 
+            "and standard errors are", round(est_worked_h_c$overall.se, 3)))
 
-####################### hours difference, worked treatment, controls #######################
-worked_hdif_c <- att_gt(yname = "husband_dif",
-                     gname = "Unilateral Divorce Year",
+
+
+
+
+
+
+##
+
+############ base specification, no controls, EQ TREAT ##############
+res_clean_wife_t <- res_clean_wife
+res_clean_wife_t[`Unilateral Divorce Year` == 0, `Treatment Year` := 0]
+res_clean_wife_t[, `Treatment Year` := max(`Equitable Distribution Year`,
+                                           `Unilateral Divorce Year`,
+                                           na.rm = TRUE), 
+                 by = id]
+
+base_t <- att_gt(yname = "HOUSEWORK HOURS",
+               gname = "Treatment Year",
+               idname = "id",
+               tname = "Year",
+               xformla = ~ 1,
+               data = res_clean_wife_t,
+               est_method = "reg",
+               weightsname = "FAMILY WEIGHT",
+               control_group = "notyettreated")
+base_est_t <- aggte(base_t, type = "dynamic", na.rm = TRUE,
+                  min_e = -5, max_e = 10)
+ggdid(base_est_t)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(base_est_t$overall.att, 3), 
+            "and standard errors are", round(base_est_t$overall.se, 3)))
+
+############ base specification, with controls EQ TREAT #############
+base_c_t <- att_gt(yname = "HOUSEWORK HOURS",
+                 gname = "Treatment Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~ `ANNUAL HOURS WORKED` +
+                   `LABOR INCOME` + haschild  + `ANNUAL HOURS WORKED_husband`,
+                 data = res_clean_wife_t,
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "notyettreated")
+base_c_t_est <- aggte(base_c_t, type = "dynamic", na.rm = TRUE,
+                    min_e = -5, max_e = 10)
+ggdid(base_c_t_est)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(base_c_t_est$overall.att, 3), 
+            "and standard errors are", round(base_c_t_est$overall.se, 3)))
+
+############ husband hours, no controls EQ TREAT ######################
+base_h_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
+                 gname = "Treatment Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~1,
+                 data = res_clean_wife_t,
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "notyettreated")
+base_h_t_est <- aggte(base_h_t, type = "dynamic", na.rm = TRUE, min_e = -5,
+                    max_e = 10)
+ggdid(base_h_t_est)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(base_h_t_est$overall.att, 3), 
+            "and standard errors are", round(base_h_t_est$overall.se, 3)))
+
+############ husband hours, with controls EQ TREAT ###################
+base_h_c_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
+                   gname = "Treatment Year",
+                   idname = "id",
+                   tname = "Year",
+                   xformla = ~  `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                     haschild + `ANNUAL HOURS WORKED_husband`,
+                   data = res_clean_wife_t,
+                   est_method = "reg",
+                   weightsname = "FAMILY WEIGHT",
+                   control_group = "notyettreated")
+est_base_h_c_t <- aggte(base_h_c_t, type = "dynamic", 
+                      na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_base_h_c_t)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_base_h_c_t$overall.att, 3), 
+            "and standard errors are", round(est_base_h_c_t$overall.se, 3)))
+
+
+############ base specification, no high school, control issues EQ TREAT #####
+nohs_t <- att_gt(yname = "HOUSEWORK HOURS",
+               gname = "Treatment Year",
+               idname = "id",
+               tname = "Year",
+               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                 haschild + `Has Equitable Distribution` +
+                 `ANNUAL HOURS WORKED_husband`,
+               data = res_clean_wife_t[hasHighSchool == 0],
+               est_method = "reg",
+               weightsname = "FAMILY WEIGHT",
+               control_group = "notyettreated")
+est_nohs_t <- aggte(nohs_t, type = "dynamic", 
+                  na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_nohs_t)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_nohs_t$overall.att, 3), 
+            "and standard errors are", round(est_nohs_t$overall.se, 3)))
+
+############ base specification, high school, control issues EQ TREAT########
+hs_t <- att_gt(yname = "HOUSEWORK HOURS",
+             gname = "Treatment Year",
+             idname = "id",
+             tname = "Year",
+             xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+               haschild + `Has Equitable Distribution`  +
+               `ANNUAL HOURS WORKED_husband`,
+             data = res_clean_wife_t[hasHighSchool == 1],
+             est_method = "reg",
+             weightsname = "FAMILY WEIGHT",
+             control_group = "notyettreated")
+est_hs_t <- aggte(hs_t, type = "dynamic", 
+                na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_hs_t)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_hs_t$overall.att, 3), 
+            "and standard errors are", round(est_hs_t$overall.se, 3)))
+
+############ husband hours, no high school, control issues EQ TREAT##########
+nohs_h_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
+                 gname = "Treatment Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                   haschild + `Has Equitable Distribution`  +
+                   `ANNUAL HOURS WORKED_husband`,
+                 data = res_clean_wife_t[hasHighSchool == 0],
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "notyettreated")
+est_nohs_h_t <- aggte(nohs_h, type = "dynamic", 
+                    na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_nohs_h_t)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_nohs_h_t$overall.att, 3), 
+            "and standard errors are", round(est_nohs_h_t$overall.se, 3)))
+
+############ husband hours, high school, control issues  EQ TREAT ###
+hs_h_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
+               gname = "Treatment Year",
+               idname = "id",
+               tname = "Year",
+               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                 haschild + `Has Equitable Distribution`  +
+                 `ANNUAL HOURS WORKED_husband`,
+               data = res_clean_wife_t[hasHighSchool == 1],
+               est_method = "reg",
+               weightsname = "FAMILY WEIGHT",
+               control_group = "notyettreated")
+est_hs_h_t <- aggte(hs_h_t, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_hs_h_t)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_hs_h_t$overall.att, 3), 
+            "and standard errors are", round(est_hs_h_t$overall.se, 3)))
+
+############ base specification, high school treatment with controls EQ TREAT
+res_clean_wife_h_t <- res_clean_wife_t
+res_clean_wife_h_t[hasHighSchool == 0, `Unilateral Divorce Year` := 0]
+hs_tt <- att_gt(yname = "HOUSEWORK HOURS",
+               gname = "Treatment Year",
+               idname = "id",
+               tname = "Year",
+               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                 haschild + `Has Equitable Distribution`  +
+                 `ANNUAL HOURS WORKED_husband`,
+               data = res_clean_wife_h_t,
+               est_method = "reg",
+               weightsname = "FAMILY WEIGHT",
+               control_group = "notyettreated")
+est_hs_tt <- aggte(hs_tt, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_hs_tt)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_hs_tt$overall.att, 3), 
+            "and standard errors are", round(est_hs_tt$overall.se, 3)))
+
+############ husband hours, high school treatment, with controls EQ TREAT
+hs_h_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
+                 gname = "Unilateral Divorce Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                   haschild + `Has Equitable Distribution`  +
+                   `ANNUAL HOURS WORKED_husband`,
+                 data = res_clean_wife_h,
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "notyettreated")
+est_hs_h_t <- aggte(hs_h_t, type = "dynamic", na.rm = TRUE, min_e = -5, 
+                    max_e = 10)
+ggdid(est_hs_h_t)
+# notes: doesn't change if you make it individual as opposed to family weights
+print(paste("overall att is", round(est_hs_h_t$overall.att, 3), 
+            "and standard errors are", round(est_hs_h_t$overall.se, 3)))
+
+
+############ worked treatment, no controls EQ TREAT #######################
+res_clean_wife_wt <- res_clean_wife_t
+res_clean_wife_wt[worked == 0, `Treatment Year` := 0]
+
+worked_t <- att_gt(yname = "HOUSEWORK HOURS",
+                 gname = "Treatment Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~1,
+                 data = res_clean_wife_wt,
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "notyettreated")
+est_worked_t <- aggte(worked_t, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_worked_t)
+
+print(paste("overall att is", round(est_worked_t$overall.att, 3), 
+            "and standard errors are", round(est_worked_t$overall.se, 3)))
+
+############ worked treatment, controls EQ TREAT #######################
+worked_ct <- att_gt(yname = "HOUSEWORK HOURS",
+                   gname = "Treatment Year",
+                   idname = "id",
+                   tname = "Year",
+                   xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                     haschild + `Has Equitable Distribution`  +
+                     `ANNUAL HOURS WORKED_husband`,
+                   data = res_clean_wife_wt,
+                   est_method = "reg",
+                   weightsname = "FAMILY WEIGHT",
+                   control_group = "notyettreated")
+est_worked_ct <- aggte(worked_ct, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
+ggdid(est_worked_ct)
+
+print(paste("overall att is", round(est_worked_c$overall.att, 3), 
+            "and standard errors are", round(est_worked_ct$overall.se, 3)))
+
+
+############ husband hours, worked treatment, no controls EQ TREAT #######################
+worked_ht <- att_gt(yname = "HOUSEWORK HOURS_husband",
+                   gname = "Treatment Year",
+                   idname = "id",
+                   tname = "Year",
+                   xformla = ~1,
+                   data = res_clean_wife_wt,
+                   est_method = "reg",
+                   weightsname = "FAMILY WEIGHT",
+                   control_group = "notyetreated")
+est_worked_ht <- aggte(worked_ht, type = "dynamic", na.rm = TRUE, min_e = -5, 
+                      max_e = 10)
+ggdid(est_worked_ht)
+print(paste("overall att is", round(est_worked_ht$overall.att, 3), 
+            "and standard errors are", round(est_worked_ht$overall.se, 3)))
+
+############ husband hours, worked treatment, controls #######################
+worked_h_c_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
+                     gname = "Treatment Year",
                      idname = "id",
                      tname = "Year",
-                     xformla = ~ STATE + `LABOR INCOME` + haschild + 
-                       `ANNUAL HOURS WORKED`,
-                     data = res_clean_wife_w,
+                     xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
+                       haschild + `Has Equitable Distribution`  +
+                       `ANNUAL HOURS WORKED_husband`,
+                     data = res_clean_wife_wt,
                      est_method = "reg",
                      weightsname = "FAMILY WEIGHT",
                      control_group = "notyettreated")
-est_worked_hdif_c <- aggte(worked, type = "dynamic", na.rm = TRUE, min_e = -5, 
+est_worked_h_c_t <- aggte(worked_h_c_t, type = "dynamic", na.rm = TRUE, min_e = -5, 
                         max_e = 10)
-ggdid(est_worked_hdif_c)
+ggdid(est_worked_h_c_t)
 
+print(paste("overall att is", round(est_worked_h_c_t$overall.att, 3), 
+            "and standard errors are", round(est_worked_h_c_t$overall.se, 3)))
 
-
-
-
-
-
-
-# do the treatment expansion
-
-# separate out the coefficients based off 3 dif subset regressions

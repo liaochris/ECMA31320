@@ -3,6 +3,7 @@ library(ggplot2)
 library(did)
 library(broom)
 library(tidyverse)
+library(lfe)
 
 `%ni%` <- Negate(`%in%`)
 rm(list = ls())
@@ -115,7 +116,7 @@ res_clean_wife[, husband_dif := `HOUSEWORK HOURS_husband` - `HOUSEWORK HOURS`]
 
 
 ################################################################################
-############################## DESHPANDE AND LI  ###############################
+################################ Dynamic TWFE  #################################
 ################################################################################
 
 # TWFE
@@ -126,21 +127,59 @@ lr_twfe <- lm(data = res_clean_wife,`HOUSEWORK HOURS` ~ factor(Year) + factor(`U
 lr_twfe$coefficients[['treatTRUE']]
 
 # dynamic:
-for(i in -5:10){
-  res_clean_wife[[paste0("treat_dummy_", i+5)]] <- res_clean_wife[["Year"]] - res_clean_wife[["Unilateral Divorce Year"]] == i
+# make unit year fixed effects
+res_clean_wife[, `:=` (f_id = factor(id),
+                       f_year = factor(Year))]
+
+# make treatment indicators
+start <- -5
+end <- 10 
+range <- end - start
+for(i in 0:range){
+  res_clean_wife[[paste0("treat_dummy_", i)]] <- res_clean_wife[["Year"]] - res_clean_wife[["Unilateral Divorce Year"]] == (i-5)
 }
 
-
 # create formula quickly
-formula <- reformulate(
-  c("factor(Year)",
-    "factor(`Unilateral Divorce Year`)",
-  grep("treat_dummy_", names(res_clean_wife), value = T)),
-  response = "`HOUSEWORK HOURS`")
+formula_felm <- as.formula(`HOUSEWORK HOURS` ~ 
+                             treat_dummy_0 + 
+                             treat_dummy_1 + 
+                             treat_dummy_2 + 
+                             treat_dummy_3 + 
+                             treat_dummy_4 + 
+                             treat_dummy_5 + 
+                             treat_dummy_6 + 
+                             treat_dummy_7 + 
+                             treat_dummy_8 + 
+                             treat_dummy_9 + 
+                             treat_dummy_10 + 
+                             treat_dummy_11 + 
+                             treat_dummy_12 + 
+                             treat_dummy_13 + 
+                             treat_dummy_14 + 
+                             treat_dummy_15 | f_id + f_year | 0 | STATE)
+dyn_est <- felm(formula = formula_felm,
+          data = res_clean_wife)
 
+dyn_est_ci <- lmtest::coefci(dyn_est, vcov = dyn_est$vcv)
 
-lr_twfe_dyn <- lm(data = res_clean_wife, formula)
-summary(lr_twfe_dyn)
+coef_years <- matrix(NA, nrow = sum(grepl("treat_dummy_", names(res_clean_wife))), ncol = 4)
+coef_years[,1] <- start:end
+for(i in 1:length(coef_years[,1])){
+  year <- coef_years[i,1]
+  coef_years[i,2] <- dyn_est$coefficients[i]
+  coef_years[i,3:4] <- dyn_est_ci[i,1:2]
+}
+coef_years <- coef_years %>% data.frame()
+names(coef_years) <- c("year", "coef", "ci_low", "ci_high")
 
+ggplot(coef_years, aes(x=year, y = coef)) + 
+  geom_point(col = 'orange', shape = 17, size = 3) +
+  geom_line(col='orange') + 
+  geom_ribbon(aes(ymin = ci_low, ymax = ci_high), alpha = 0.15, fill='orange') +
+  geom_hline(yintercept = 0, col = 'grey') + 
+  geom_vline(xintercept = 0, linetype= 'dashed', col = 'grey') + 
+  xlab("Year") + 
+  ylab("Coefficient on interaction term")+
+  theme_classic()
 
 

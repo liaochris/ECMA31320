@@ -1,8 +1,12 @@
 library(data.table)
 library(ggplot2)
 library(did)
+library(broom)
+library(tidyverse)
 
 `%ni%` <- Negate(`%in%`)
+rm(list = ls())
+gc()
 
 setwd("~/Google Drive/Academic Work/Sophomore Year/Spring Quarter/Metrics Data Science/ECMA31320/Project/Data/")
 if (Sys.info()[8] == "noahsobel-lewin") setwd("/Users/noahsobel-lewin/Dropbox/ECMA31320/Project/Data")
@@ -115,14 +119,15 @@ res_clean_wife[, husband_dif := `HOUSEWORK HOURS_husband` - `HOUSEWORK HOURS`]
 ################################################################################
 
 # Set parameters
-relative_start_year <- -4 
-relative_end_year <- 3
+relative_start_year <- -3
+relative_end_year <- 5
 data <- res_clean_wife
 id <- "id"
 outcome <-  "HOUSEWORK HOURS"
 treatment_date <- "Unilateral Divorce Year"
 year <- "Year"
-relevant_vars <- c(outcome, treatment_date, year, id)
+subpop <- "hasHighSchool"
+relevant_vars <- c(outcome, treatment_date, year, id, subpop, "STATE")
 
 # Retrieve groups 
 groups <- res_clean_wife[[treatment_date]] %>% 
@@ -133,7 +138,7 @@ groups <- groups[between(groups, 1970, 1987)]
 for(g in groups){
   
   # keep necessary data
-  data_dl <- res_clean_wife[between(Year, 
+  data_dl <- res_clean_wife[between(get(year), 
                                     g + relative_start_year, 
                                     g + relative_end_year), 
                             ..relevant_vars ] 
@@ -150,10 +155,86 @@ for(g in groups){
   # designate not yet treated as controls 
   data_dl[, control := (get(treatment_date) > g)]
   
-  # generate center year
-  data_dl[, centered_year := ]
-  
   # append
   if (which(g == groups) == 1) data_dl_out <- data_dl
   else data_dl_out <- rbind(data_dl_out, data_dl)
 }
+
+# generate centered year
+data_dl_out[,centered_year := get(year) - experiment_number]
+
+# make difference plot total
+data_dl_plot <- data_dl_out[, mean_outcome := mean(get(outcome), na.rm = T), 
+             by = c("centered_year", "treat")][!is.na(mean_outcome)]
+
+ggplot(data = data_dl_plot, 
+       aes(x = centered_year, y = mean_outcome, color = treat)) +
+geom_line() + 
+geom_vline(xintercept = 0, color = 'grey', linetype = 'dashed') +
+theme(text = element_text(family="Georgia")) +
+xlab("Centered year") +
+ylab("Housework")
+
+# make difference plot subpop 1
+data_dl_plot <- data_dl_out[get(subpop) == 0,
+                            .(mean_outcome = mean(get(outcome), 
+                                                  na.rm = T)), 
+                            by = c("centered_year", "treat")][!is.na(mean_outcome)]
+ggplot(data = data_dl_plot, 
+       aes(x = centered_year, y = mean_outcome, color = treat)) +
+  geom_line() + 
+  geom_vline(xintercept = 0, color = 'grey', linetype = 'dashed') +
+  theme(text = element_text(family="Georgia")) +
+  xlab("Centered year") +
+  ylab("Housework")
+
+# make difference plot subpop 0
+data_dl_plot <- data_dl_out[get(subpop) == 0,
+                            .(mean_outcome = mean(get(outcome), 
+                                                  na.rm = T)), 
+                            by = c("centered_year", "treat")][!is.na(mean_outcome)]
+
+ggplot(data = data_dl_plot, 
+       aes(x = centered_year, y = mean_outcome, color = treat)) +
+  geom_line() + 
+  geom_vline(xintercept = 0, color = 'grey', linetype = 'dashed') +
+  theme(text = element_text(family="Georgia")) +
+  xlab("Centered year") +
+  ylab("Housework")
+
+# simple DD
+data_dl_out[, `:=` (post = get(year) >= experiment_number)]
+lr1 <- lm(get(outcome)~ 1 + post + treat + post*treat, 
+          data = data_dl_out) 
+lmtest::coeftest(lr1, sandwich::vcovCL(lr1, type="HC1"))
+
+# Dynamic DD
+data_dl_dyn <- data_dl_out[, `:=` (f_centered_year = relevel(factor(centered_year), ref = "0"),
+                                   treat = relevel(factor(treat), ref = "FALSE"))]
+lr2 <- lm(get(outcome) ~ 1 + treat*f_centered_year, data = data_dl_dyn)
+lr2_vcov <- lmtest::coeftest(lr2, sandwich::vcovCL(lr2, type="HC1"))
+lr2_ci <- lmtest::coefci(lr2, vcov = sandwich::vcovCL(lr2, type="HC1"))
+
+coef_years <- matrix(NA, nrow = length(unique(data_dl_out$centered_year)), ncol = 4)
+coef_years[,1] <- sort(unique(data_dl_out$centered_year))
+for(i in 1:length(coef_years[,1])){
+  year <- coef_years[i,1]
+  if(year == 0) coef_years[i,2:4] <- 0
+  else{
+    coef_years[i,2] <- lr2$coefficients[paste0('treatTRUE:f_centered_year', year)]
+    pos <- rownames(lr2_ci) == paste0('treatTRUE:f_centered_year', year)
+    coef_years[i,3:4] <- lr2_ci[pos,1:2]
+  }
+}
+coef_years <- coef_years %>% data.frame()
+names(coef_years) <- c("year", "coef", "ci_low", "ci_high")
+
+ggplot(coef_years, aes(x=year, y = coef)) + 
+  geom_point(col = 'orange', shape = 17, size = 3) +
+  geom_line(col='orange') + 
+  geom_ribbon(aes(ymin = ci_low, ymax = ci_high), alpha = 0.15, fill='orange') +
+  geom_hline(yintercept = 0, col = 'grey') + 
+  geom_vline(xintercept = 0, linetype= 'dashed', col = 'grey') + 
+  xlab("Year") + 
+  ylab("Coefficient on interaction term")+
+  theme_classic()

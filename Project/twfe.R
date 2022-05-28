@@ -135,7 +135,7 @@ res_clean_wife[, `:=` (f_id = factor(id),
 start <- -5
 end <- 10 
 range <- end - start
-for(i in 0:range){
+for(i in setdiff(0:range, c(4))){
   res_clean_wife[[paste0("treat_dummy_", i)]] <- res_clean_wife[["Year"]] - res_clean_wife[["Unilateral Divorce Year"]] == (i-5)
 }
 
@@ -145,7 +145,6 @@ formula_felm <- as.formula(`HOUSEWORK HOURS` ~
                              treat_dummy_1 + 
                              treat_dummy_2 + 
                              treat_dummy_3 + 
-                             treat_dummy_4 + 
                              treat_dummy_5 + 
                              treat_dummy_6 + 
                              treat_dummy_7 + 
@@ -156,20 +155,22 @@ formula_felm <- as.formula(`HOUSEWORK HOURS` ~
                              treat_dummy_12 + 
                              treat_dummy_13 + 
                              treat_dummy_14 + 
-                             treat_dummy_15 | f_id + f_year | 0 | STATE)
+                             treat_dummy_15 | f_id + f_year | 0 | STATE + id)
 dyn_est <- felm(formula = formula_felm,
-          data = res_clean_wife)
+          data = res_clean_wife, subset = between(Year, 1969, 1989))
 
 dyn_est_ci <- lmtest::coefci(dyn_est, vcov = dyn_est$vcv)
 
-coef_years <- matrix(NA, nrow = sum(grepl("treat_dummy_", names(res_clean_wife))), ncol = 4)
+coef_years <- matrix(NA, nrow = length(start:end), ncol = 4)
 coef_years[,1] <- start:end
-for(i in 1:length(coef_years[,1])){
-  year <- coef_years[i,1]
-  coef_years[i,2] <- dyn_est$coefficients[i]
-  coef_years[i,3:4] <- dyn_est_ci[i,1:2]
+for(i in start:end){
+  if(i %in% c(-1)) coef_years[i + 5,2:4] <- 0 
+  else{
+    coef_years[i+5,2] <- dyn_est$coefficients[grepl(paste0("treat_dummy_", i +5, "TRUE"), rownames(dyn_est$coefficients))]
+    coef_years[i+5,3:4] <- dyn_est_ci[grepl(paste0("treat_dummy_", i +5, "TRUE"), rownames(dyn_est$coefficients)),1:2]
+  }
 }
-coef_years <- coef_years %>% data.frame()
+coef_years <- coef_years[1:(dim(coef_years)[1] - 1),] %>% data.frame()
 names(coef_years) <- c("year", "coef", "ci_low", "ci_high")
 
 ggplot(coef_years, aes(x=year, y = coef)) + 
@@ -178,8 +179,9 @@ ggplot(coef_years, aes(x=year, y = coef)) +
   geom_ribbon(aes(ymin = ci_low, ymax = ci_high), alpha = 0.15, fill='orange') +
   geom_hline(yintercept = 0, col = 'grey') + 
   geom_vline(xintercept = 0, linetype= 'dashed', col = 'grey') + 
-  xlab("Year") + 
+  xlab("Years since ") + 
   ylab("Coefficient on interaction term")+
   theme_classic()
+ggsave("dynamic_twfe.png")
 
 

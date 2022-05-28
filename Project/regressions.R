@@ -132,6 +132,8 @@ fwrite(res_clean_wife, "final_regression_dataset.csv")
 ############################ SANT'ANNA CALLAWAY ################################
 ################################################################################
 
+res_clean_wife
+
 #res_clean_wife <- res_clean_wife[`Unilateral Divorce` != "no" & `Unilateral Divorce` != "1992"]
 
 # summary(res_clean_wife[`Unilateral Divorce Year` == 0,..cols])
@@ -148,6 +150,16 @@ cols <- c("AGE", "RENT/OWN STATUS", "ANNUAL HOURS WORKED", "LABOR INCOME",
   "person_husband", "AGE_husband", "ANNUAL HOURS WORKED_husband",
   "LABOR INCOME_husband", "HOUSEWORK HOURS_husband","hasHighSchool","worked")
 
+createFigure <- function(estimate) {
+   est1 <- aggte(estimate, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 0)
+   est2 <- aggte(estimate, type = "dynamic", na.rm = TRUE, min_e = 1, max_e = 5)
+   est3 <- aggte(estimate, type = "dynamic", na.rm = TRUE, min_e = 6, max_e = 10)
+   df <- rbind(c(est1$overall.att, est1$overall.se),
+               c(est2$overall.att, est2$overall.se),
+               c(est3$overall.att, est3$overall.se))
+   df$name <- 
+}
+
 ############ base specification, with controls ######################
 base_c <- att_gt(yname = "HOUSEWORK HOURS",
                  gname = "Unilateral Divorce Year",
@@ -162,9 +174,22 @@ base_c <- att_gt(yname = "HOUSEWORK HOURS",
                  allow_unbalanced_panel = TRUE)
 base_c_est <- aggte(base_c, type = "dynamic", na.rm = TRUE,
                     min_e = -5, max_e = 10)
-ggdid(base_c_est)
+ggdid(base_c_est)  +
+  annotate("text", x = 9, y = 1500,
+           label = paste("ATT:", round(base_c_est$overall.att, 3))) +
+  annotate("text", x = 9, y = 1300,
+           label = paste("SE: ", round(base_c_est$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Wife)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL")
 # notes: doesn't change if you make it individual as opposed to family weights
-print(paste("overall att is", round(base_c_est$overall.att, 3), 
+print(paste("overall att is", round(base_c_est$overall.att, 3),
             "and standard errors are", round(base_c_est$overall.se, 3)))
 
 ############ husband hours, with controls ##########################
@@ -176,12 +201,25 @@ base_h_c <- att_gt(yname = "HOUSEWORK HOURS_husband",
                    data = res_clean_wife,
                    est_method = "reg",
                    weightsname = "FAMILY WEIGHT",
-                   control_group = "nevertreated",
+                   control_group = "notyettreated",
                    clustervars = c("State"),
                    allow_unbalanced_panel = TRUE)
 est_base_h_c <- aggte(base_h_c, type = "dynamic", 
                       na.rm = TRUE, min_e = -5, max_e = 10)
-ggdid(est_base_h_c)
+ggdid(est_base_h_c)  +
+  annotate("text", x = 9, y = 250,
+           label = paste("ATT:", round(est_base_h_c$overall.att, 3))) +
+  annotate("text", x = 9, y = 225,
+           label = paste("SE: ", round(est_base_h_c$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Husband)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL")
 # notes: doesn't change if you make it individual as opposed to family weights
 print(paste("overall att is", round(est_base_h_c$overall.att, 3), 
             "and standard errors are", round(est_base_h_c$overall.se, 3)))
@@ -197,11 +235,25 @@ hs_t <- att_gt(yname = "HOUSEWORK HOURS",
                data = res_clean_wife_h ,
                est_method = "reg",
                weightsname = "FAMILY WEIGHT",
-               control_group = "nevertreated",
+               control_group = "notyettreated",
                clustervars = c("State"),
+               anticipation = 3,
                allow_unbalanced_panel = TRUE)
 est_hs_t <- aggte(hs_t, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
-ggdid(est_hs_t)
+ggdid(est_hs_t) +
+  annotate("text", x = 9, y = 1000,
+           label = paste("ATT:", round(est_hs_t$overall.att, 3))) +
+  annotate("text", x = 9, y = 850,
+           label = paste("SE: ", round(est_hs_t$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Wife)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL and Wife has HS Degree")
 # notes: doesn't change if you make it individual as opposed to family weights
 print(paste("overall att is", round(est_hs_t$overall.att, 3), 
             "and standard errors are", round(est_hs_t$overall.se, 3)))
@@ -220,7 +272,21 @@ hs_h_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
                allow_unbalanced_panel = TRUE)
 est_hs_h_t <- aggte(hs_h_t, type = "dynamic", na.rm = TRUE, min_e = -5, 
                     max_e = 10)
-ggdid(est_hs_h_t)
+ggdid(est_hs_h_t) +
+  annotate("text", x = 9, y = 300,
+           label = paste("ATT:", round(est_hs_h_t$overall.att, 3))) +
+  annotate("text", x = 9, y = 250,
+           label = paste("SE: ", round(est_hs_h_t$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Husband)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL and Wife has HS Degree")
+
 # notes: doesn't change if you make it individual as opposed to family weights
 print(paste("overall att is", round(est_hs_h_t$overall.att, 3), 
             "and standard errors are", round(est_hs_h_t$overall.se, 3)))
@@ -237,11 +303,24 @@ worked_c <- att_gt(yname = "HOUSEWORK HOURS",
                  data = res_clean_wife_w,
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
-                 control_group = "nevertreated",
-                 allow_unbalanced_panel = TRUE,
-                 clustervars = c("State"))
+                 control_group = "notyettreated",
+                 #clustervars = c("State"),
+                 allow_unbalanced_panel = TRUE)
 est_worked_c <- aggte(worked_c, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
-ggdid(est_worked_c)
+ggdid(est_worked_c) +
+  annotate("text", x = 9, y = 500,
+           label = paste("ATT:", round(est_worked_c$overall.att, 3))) +
+  annotate("text", x = 9, y = 450,
+           label = paste("SE: ", round(est_worked_c$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Wife)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL and Wife was Employed Year of UDL Passage")
 
 print(paste("overall att is", round(est_worked_c$overall.att, 3), 
             "and standard errors are", round(est_worked_c$overall.se, 3)))
@@ -256,11 +335,24 @@ worked_h_c <- att_gt(yname = "HOUSEWORK HOURS_husband",
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
                  control_group = "nevertreated",
-                 allow_unbalanced_panel = TRUE,
-                 clustervars = c("State"))
+                 #clustervars = c("State"),
+                 allow_unbalanced_panel = TRUE)
 est_worked_h_c <- aggte(worked_h_c, type = "dynamic", na.rm = TRUE, min_e = -5, 
                         max_e = 10)
-ggdid(est_worked_h_c)
+ggdid(est_worked_h_c) +
+  annotate("text", x = 9, y = 350,
+           label = paste("ATT:", round(est_worked_h_c$overall.att, 3))) +
+  annotate("text", x = 9, y = 325,
+           label = paste("SE: ", round(est_worked_h_c$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Husband)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL and Wife was Employed Year of UDL Passage")
 
 print(paste("overall att is", round(est_worked_h_c$overall.att, 3), 
             "and standard errors are", round(est_worked_h_c$overall.se, 3)))
@@ -283,11 +375,24 @@ base_c_t <- att_gt(yname = "HOUSEWORK HOURS",
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
                  control_group = "nevertreated",
-                 allow_unbalanced_panel = TRUE,
-                 clustervars = c("STATE"))
+                 #clustervars = c("STATE"),
+                 allow_unbalanced_panel = TRUE)
 base_c_t_est <- aggte(base_c_t, type = "dynamic", na.rm = TRUE,
-                    min_e = -5, max_e = 10)
-ggdid(base_c_t_est)
+                    min_e = -5, max_e = 10) 
+ggdid(base_c_t_est) +
+  annotate("text", x = 9, y = 300,
+           label = paste("ATT:", round(base_c_t_est$overall.att, 3))) +
+  annotate("text", x = 9, y = 250,
+           label = paste("SE: ", round(base_c_t_est$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Wife)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL and Equitable Distribution")
 # notes: doesn't change if you make it individual as opposed to family weights
 print(paste("overall att is", round(base_c_t_est$overall.att, 3), 
             "and standard errors are", round(base_c_t_est$overall.se, 3)))
@@ -302,11 +407,24 @@ base_h_c_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
                    est_method = "reg",
                    weightsname = "FAMILY WEIGHT",
                    control_group = "nevertreated",
-                   allow_unbalanced_panel = TRUE,
-                   clustervars = c("STATE"))
+                   #clustervars = c("STATE"),
+                   allow_unbalanced_panel = TRUE)
 est_base_h_c_t <- aggte(base_h_c_t, type = "dynamic", 
                       na.rm = TRUE, min_e = -5, max_e = 10)
-ggdid(est_base_h_c_t)
+ggdid(est_base_h_c_t) +
+  annotate("text", x = 9, y = 250,
+           label = paste("ATT:", round(est_base_h_c_t$overall.att, 3))) +
+  annotate("text", x = 9, y = 225,
+           label = paste("SE: ", round(est_base_h_c_t$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Husband)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL and Equitable Distribution")
 # notes: doesn't change if you make it individual as opposed to family weights
 print(paste("overall att is", round(est_base_h_c_t$overall.att, 3), 
             "and standard errors are", round(est_base_h_c_t$overall.se, 3)))
@@ -318,17 +436,28 @@ hs_tt <- att_gt(yname = "HOUSEWORK HOURS",
                gname = "Treatment Year",
                idname = "id",
                tname = "Year",
-               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + 
-                 haschild + `Has Equitable Distribution`  +
-                 `ANNUAL HOURS WORKED_husband`,
+               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + AGE,
                data = res_clean_wife_h_t,
-               est_method = "dr",
+               est_method = "reg",
                weightsname = "FAMILY WEIGHT",
-               control_group = "nevertreated",
-               allow_unbalanced_panel = TRUE,
-               clustervars = c("STATE"))
+               control_group = "notyettreated",
+               clustervars = c("STATE"),
+               allow_unbalanced_panel = TRUE)
 est_hs_tt <- aggte(hs_tt, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
-ggdid(est_hs_tt)
+ggdid(est_hs_tt) +
+  annotate("text", x = 9, y = 250,
+           label = paste("ATT:", round(est_hs_tt$overall.att, 3))) +
+  annotate("text", x = 9, y = 225,
+           label = paste("SE: ", round(est_hs_tt$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL and Equitable Distribution and Wife Graduated from HS")
 # notes: doesn't change if you make it individual as opposed to family weights
 print(paste("overall att is", round(est_hs_tt$overall.att, 3), 
             "and standard errors are", round(est_hs_tt$overall.se, 3)))
@@ -345,10 +474,23 @@ hs_h_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
                  control_group = "nevertreated",
-                 allow_unbalanced_panel = TRUE,
-                 clustervars = c("STATE"))
+                 #clustervars = c("STATE"),
+                 allow_unbalanced_panel = TRUE)
 est_hs_h_t <- aggte(hs_h_t, type = "dynamic", na.rm = TRUE, min_e = -5, 
-                    max_e = 10)
+                    max_e = 10)  +
+  annotate("text", x = 9, y = 250,
+           label = paste("ATT:", round(est_base_h_c_t$overall.att, 3))) +
+  annotate("text", x = 9, y = 225,
+           label = paste("SE: ", round(est_base_h_c_t$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Husband)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL and Equitable Distribution")
 ggdid(est_hs_h_t)
 # notes: doesn't change if you make it individual as opposed to family weights
 print(paste("overall att is", round(est_hs_h_t$overall.att, 3), 
@@ -368,12 +510,26 @@ worked_ct <- att_gt(yname = "HOUSEWORK HOURS",
                    est_method = "reg",
                    weightsname = "FAMILY WEIGHT",
                    control_group = "nevertreated",
-                   allow_unbalanced_panel = TRUE,
-                   clustervars = c("STATE"))
+                   #clustervars = c("STATE"),
+                   allow_unbalanced_panel = TRUE)
 est_worked_ct <- aggte(worked_ct, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
-ggdid(est_worked_ct)
+ggdid(est_worked_ct)  +
+  annotate("text", x = 9, y = 375,
+           label = paste("ATT:", round(est_worked_ct$overall.att, 3))) +
+  annotate("text", x = 9, y = 325,
+           label = paste("SE: ", round(est_worked_ct$overall.se, 3))) +
+  theme_classic() +
+  ggtitle("Treatment Effect on Annual Hoursework Hours (Wife)") + 
+  theme(plot.title = element_text(family = 'Georgia', hjust = 0.2, size = 20), 
+        axis.title.x = element_text(family = 'Georgia', size = 16),
+        axis.text = element_text(family = 'Georgia', size = 10),
+        axis.title.y = element_text(family = 'Georgia', size = 16),
+        legend.title = element_text(family = 'Georgia', size = 10),) +
+  labs(y= "ATT Estimate", x = "Years since Treatment",
+       subtitle = "Treatment: State of Residence Passed UDL and Equitable Distribution, Wife Worked \n 
+       Year of Treatment")
 
-print(paste("overall att is", round(est_worked_c$overall.att, 3), 
+print(paste("overall att is", round(est_worked_ct$overall.att, 3), 
             "and standard errors are", round(est_worked_ct$overall.se, 3)))
 
 
@@ -387,8 +543,8 @@ worked_ht <- att_gt(yname = "HOUSEWORK HOURS_husband",
                    est_method = "reg",
                    weightsname = "FAMILY WEIGHT",
                    control_group = "nevertreated",
-                   allow_unbalanced_panel = TRUE,
-                   clustervars = c("STATE"))
+                   #clustervars = c("STATE"),
+                   allow_unbalanced_panel = TRUE)
 est_worked_ht <- aggte(worked_ht, type = "dynamic", na.rm = TRUE, min_e = -5, 
                       max_e = 10)
 ggdid(est_worked_ht)

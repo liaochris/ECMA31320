@@ -17,7 +17,7 @@ if (Sys.info()[8] == "noahsobel-lewin") setwd("/Users/noahsobel-lewin/Dropbox/EC
 ################################################################################
 # DTWFE function
 plot_dtwfe <- function(reg_data, controls) {
-
+  
   # assert control binary
   stopifnot(controls %in% c(0,1))
  
@@ -86,13 +86,14 @@ plot_dtwfe <- function(reg_data, controls) {
     geom_ribbon(aes(ymin = ci_low, ymax = ci_high), alpha = 0.15, fill='orange') +
     geom_hline(yintercept = 0, col = 'grey') + 
     geom_vline(xintercept = 0, linetype= 'dashed', col = 'grey') + 
-    xlab("Years since ") + 
+    xlab("Relative Year") + 
     ylab("")+
+    scale_x_continuous(breaks =c(-4, -2, 0, 2, 4, 6, 8, 10)) +
     theme(panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(),
           panel.background = element_blank(), 
           axis.line = element_line(colour = "black"),
-          text=element_text(size=16, family = 'Georgia'))
+          text=element_text(size=20, family = 'Georgia')) 
   
   return(plot)
 }
@@ -111,9 +112,9 @@ res_clean_wife <- fread("Data/final_regression_dataset.csv") %>%
     "Equitable Distribution Year",
     "Equitable Distribution",
     "HOUSEWORK HOURS",
-    "STATE"))
+    "STATE",
+    "worked"))
 
-# dynamic:
 # make unit year fixed effects
 res_clean_wife[, `:=` (f_id = factor(id),
                        f_year = factor(Year))]
@@ -152,8 +153,7 @@ res_clean_wife[, `Treatment Year` := max(`Equitable Distribution Year`,
                                            `Unilateral Divorce Year`,
                                            na.rm = TRUE), 
                  by = id]
-res_clean_wife <- res_clean_wife[`Unilateral Divorce Year` == 0, 
-               `Treatment Year` := 0]
+res_clean_wife[`Unilateral Divorce Year` == 0, `Treatment Year` := 0]
 
 # make treatment indicators
 start <- -5
@@ -169,6 +169,61 @@ ggsave("Graphics/dynamic_twfe_equ.png")
 # controls 
 plot_dtwfe(res_clean_wife, 1)
 ggsave("Graphics/dynamic_twfe_equ_controls.png")
+
+#========== Unilateral divorce + worked ==========
+# define treatment
+res_clean_wife[, `Treatment Year` := `Unilateral Divorce Year`]
+res_clean_wife[worked == 0, `Treatment Year` := 0]
+
+# make controls the value at year before treatment 
+res_clean_wife[, year_before_treat := (Year == `Treatment Year` -1)]
+res_clean_wife[, `:=`(age_control = max(year_before_treat * AGE),
+                      ann_hrs_work_control = max(year_before_treat * `ANNUAL HOURS WORKED`),
+                      labor_inc_control = max(year_before_treat * `LABOR INCOME`)
+), by = id]
+
+# make treatment indicators
+start <- -5
+end <- 10 
+for(i in setdiff(end:start, -1)){
+  res_clean_wife[[paste0("treat_dummy ", i)]] <- res_clean_wife[["Year"]] - res_clean_wife[["Treatment Year"]] == (i-5)
+}
+
+
+
+# no controls 
+plot_dtwfe(res_clean_wife, 0)
+ggsave("Graphics/dynamic_twfe_uni_work.png")
+
+# controls 
+plot_dtwfe(res_clean_wife, 1)
+ggsave("Graphics/dynamic_twfe_uni_work_controls.png")
+
+#========== Unilateral divorce + equitable distribution ==========
+# define treatment 
+res_clean_wife[, `Treatment Year` := max(`Equitable Distribution Year`,
+                                         `Unilateral Divorce Year`,
+                                         na.rm = TRUE), 
+               by = id]
+res_clean_wife[`Unilateral Divorce Year` == 0, `Treatment Year` := 0]
+res_clean_wife[worked == 0, `Treatment Year` := 0]
+
+# make treatment indicators
+start <- -5
+end <- 10 
+for(i in setdiff(end:start, -1)){
+  res_clean_wife[[paste0("treat_dummy ", i)]] <- res_clean_wife[["Year"]] - res_clean_wife[["Treatment Year"]] == (i-5)
+}
+
+# no controls 
+plot_dtwfe(res_clean_wife, 0)
+ggsave("Graphics/dynamic_twfe_equ_work.png")
+
+# controls 
+plot_dtwfe(res_clean_wife, 1)
+ggsave("Graphics/dynamic_twfe_equ_work_controls.png")
+
+
 
 
 

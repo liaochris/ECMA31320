@@ -96,7 +96,7 @@ res_clean_wife[, hasHighSchool := as.numeric(max(`EDUCATION`, na.rm = TRUE)
                                              %in% c(4:8)), by = id]
 # worked in year policy passed
 ids <- res_clean_wife[`ANNUAL HOURS WORKED` > 0 & 
-                        Year == `Unilateral Divorce Year`, id]
+                        (Year+1 == `Unilateral Divorce Year`), id]
 res_clean_wife[, worked := id %in% ids]
 
 # had income
@@ -150,15 +150,15 @@ cols <- c("AGE", "RENT/OWN STATUS", "ANNUAL HOURS WORKED", "LABOR INCOME",
   "person_husband", "AGE_husband", "ANNUAL HOURS WORKED_husband",
   "LABOR INCOME_husband", "HOUSEWORK HOURS_husband","hasHighSchool","worked")
 
-createFigure <- function(estimate) {
-   est1 <- aggte(estimate, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 0)
-   est2 <- aggte(estimate, type = "dynamic", na.rm = TRUE, min_e = 1, max_e = 5)
-   est3 <- aggte(estimate, type = "dynamic", na.rm = TRUE, min_e = 6, max_e = 10)
-   df <- rbind(c(est1$overall.att, est1$overall.se),
-               c(est2$overall.att, est2$overall.se),
-               c(est3$overall.att, est3$overall.se))
-   df$name <- 
-}
+# createFigure <- function(estimate) {
+#    est1 <- aggte(estimate, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 0)
+#    est2 <- aggte(estimate, type = "dynamic", na.rm = TRUE, min_e = 1, max_e = 5)
+#    est3 <- aggte(estimate, type = "dynamic", na.rm = TRUE, min_e = 6, max_e = 10)
+#    df <- rbind(c(est1$overall.att, est1$overall.se),
+#                c(est2$overall.att, est2$overall.se),
+#                c(est3$overall.att, est3$overall.se))
+#    df$name <- 
+# }
 
 ############ base specification, with controls ######################
 base_c <- att_gt(yname = "HOUSEWORK HOURS",
@@ -260,16 +260,16 @@ print(paste("overall att is", round(est_hs_t$overall.att, 3),
 
 ############ husband hours, high school treatment, with controls ####
 hs_h_t <- att_gt(yname = "HOUSEWORK HOURS_husband",
-               gname = "Unilateral Divorce Year",
-               idname = "id",
-               tname = "Year",
-               xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME`+ AGE,
-               data = res_clean_wife_h,
-               est_method = "reg",
-               weightsname = "FAMILY WEIGHT",
-               control_group = "nevertreated",
-               clustervars = c("State"),
-               allow_unbalanced_panel = TRUE)
+                 gname = "Unilateral Divorce Year",
+                 idname = "id",
+                 tname = "Year",
+                 xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME`+ AGE,
+                 data = res_clean_wife_h,
+                 est_method = "reg",
+                 weightsname = "FAMILY WEIGHT",
+                 control_group = "nevertreated",
+                 clustervars = c("State"),
+                 allow_unbalanced_panel = TRUE)
 est_hs_h_t <- aggte(hs_h_t, type = "dynamic", na.rm = TRUE, min_e = -5, 
                     max_e = 10)
 ggdid(est_hs_h_t) +
@@ -499,19 +499,25 @@ print(paste("overall att is", round(est_hs_h_t$overall.att, 3),
 
 ############ worked treatment, controls EQ TREAT #######################
 res_clean_wife_wt <- copy(res_clean_wife_t)
-res_clean_wife_wt[worked == 0, `Treatment Year` := 0]
 
+# worked in year policy passed
+ids <- res_clean_wife_wt[`ANNUAL HOURS WORKED` > 0 & 
+                        (Year+1 == `Treatment Year`), id]
+res_clean_wife_wt[, worked := id %in% ids]
+res_clean_wife_wt[, YEAR := factor(Year)]
 worked_ct <- att_gt(yname = "HOUSEWORK HOURS",
-                   gname = "Treatment Year",
-                   idname = "id",
-                   tname = "Year",
-                   xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + AGE,
-                   data = res_clean_wife_wt,
-                   est_method = "reg",
-                   weightsname = "FAMILY WEIGHT",
-                   control_group = "nevertreated",
-                   #clustervars = c("STATE"),
-                   allow_unbalanced_panel = TRUE)
+                    gname = "Treatment Year",
+                    idname = "id",
+                    tname = "Year",
+                    xformla = ~ `ANNUAL HOURS WORKED` + `LABOR INCOME` + AGE + YEAR,
+                    data = res_clean_wife_wt,
+                    est_method = "reg",
+                    weightsname = "FAMILY WEIGHT",
+                    control_group = "nevertreated",
+                    clustervars = c("STATE"),
+                    allow_unbalanced_panel = TRUE, 
+                    #anticipation = 3
+                    )
 est_worked_ct <- aggte(worked_ct, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
 ggdid(est_worked_ct)  +
   annotate("text", x = 9, y = 375,

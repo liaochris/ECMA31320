@@ -38,7 +38,7 @@ plot_dtwfe <- function(reg_data, controls) {
                                  `treat_dummy 7` + 
                                  `treat_dummy 8` + 
                                  `treat_dummy 9` +
-                                 `treat_dummy 10` | f_id + f_year | 0 | STATE + id)
+                                 `treat_dummy 10` | f_id + f_year + f_state | 0 | STATE + id)
     dyn_est <- felm(formula = formula_felm,
                     data = reg_data, subset = between(Year, 1969, 1989))
   }
@@ -61,7 +61,7 @@ plot_dtwfe <- function(reg_data, controls) {
                                  `treat_dummy 10` +
                                  ann_hrs_work_control + 
                                  labor_inc_control + 
-                                 age_control| f_id + f_year | 0 | STATE + id)
+                                 age_control| f_id + f_year + f_state | 0 | STATE + id)
     dyn_est <- felm(formula = formula_felm,
                     data = reg_data, subset = between(Year, 1969, 1989))
   }
@@ -117,7 +117,8 @@ res_clean_wife <- fread("Data/final_regression_dataset.csv") %>%
 
 # make unit year fixed effects
 res_clean_wife[, `:=` (f_id = factor(id),
-                       f_year = factor(Year))]
+                       f_year = factor(Year),
+                       f_state = factor(STATE))]
 
 #========== Unilateral divorce ==========
 # define treatment

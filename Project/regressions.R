@@ -132,7 +132,6 @@ fwrite(res_clean_wife, "final_regression_dataset.csv")
 ############################ SANT'ANNA CALLAWAY ################################
 ################################################################################
 
-res_clean_wife
 
 #res_clean_wife <- res_clean_wife[`Unilateral Divorce` != "no" & `Unilateral Divorce` != "1992"]
 
@@ -160,17 +159,19 @@ cols <- c("AGE", "RENT/OWN STATUS", "ANNUAL HOURS WORKED", "LABOR INCOME",
 #    df$name <- 
 # }
 
+t <- res_clean_wife[,all(`ANNUAL HOURS WORKED` > 0), by = id][V1 == TRUE, id]
+
 ############ base specification, with controls ######################
 base_c <- att_gt(yname = "HOUSEWORK HOURS",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
                  tname = "Year",
-                 xformla = ~ AGE + `ANNUAL HOURS WORKED` + `LABOR INCOME`,
-                 data = res_clean_wife,
+                 xformla = ~  AGE + `ANNUAL HOURS WORKED` + `LABOR INCOME`,
+                 data = res_clean_wife[id %in% t],
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
-                 control_group = "nevertreated",
-                 clustervars = c("State"),
+                 control_group = "notyettreated",
+                 #clustervars = c("State"),
                  allow_unbalanced_panel = TRUE)
 base_c_est <- aggte(base_c, type = "dynamic", na.rm = TRUE,
                     min_e = -5, max_e = 10)

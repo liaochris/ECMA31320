@@ -1,3 +1,5 @@
+# install.packages("devtools")
+devtools::install_github("bcallaway11/did")
 library(data.table)
 library(ggplot2)
 library(did)
@@ -159,22 +161,95 @@ cols <- c("AGE", "RENT/OWN STATUS", "ANNUAL HOURS WORKED", "LABOR INCOME",
 #    df$name <- 
 # }
 
-t <- res_clean_wife[,all(`ANNUAL HOURS WORKED` > 0), by = id][V1 == TRUE, id]
 
+
+
+treat <- res_clean_wife[Year < `Unilateral Divorce Year` & `Unilateral Divorce Year` != 0, 
+                        all(`ANNUAL HOURS WORKED` > 1200),
+                        by = id][V1 == TRUE, id]
+control <- res_clean_wife[Year <= 1973 & `Unilateral Divorce Year` == 0, 
+                          all(`ANNUAL HOURS WORKED` > 1200), by = id][V1 == TRUE, id]
+  
+  
 ############ base specification, with controls ######################
 base_c <- att_gt(yname = "HOUSEWORK HOURS",
                  gname = "Unilateral Divorce Year",
                  idname = "id",
                  tname = "Year",
                  xformla = ~  AGE + `ANNUAL HOURS WORKED` + `LABOR INCOME`,
-                 data = res_clean_wife[id %in% t],
+                 data = res_clean_wife[id %in% c(treat, control) & `Unilateral Divorce Year` < 1980],
                  est_method = "reg",
                  weightsname = "FAMILY WEIGHT",
-                 control_group = "notyettreated",
+                 control_group = "nevertreated",
                  #clustervars = c("State"),
                  allow_unbalanced_panel = TRUE)
-base_c_est <- aggte(base_c, type = "dynamic", na.rm = TRUE,
-                    min_e = -5, max_e = 10)
+
+base_c_est <- aggte(base_c, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10)
+base_c_est_s <- aggte(base_c, type = "dynamic", na.rm = TRUE, min_e = -5, max_e = 10,
+                        cband = FALSE, bstrap = FALSE, alp = 0.05, biters = 999)
+
+# Now, we are ready to compute the aggregated event study ( I will average the evense study for 2 and 3 event times)
+es_aggregated <- base_c_est_s$att.egt
+
+# Get the influence function for the boostrap
+es_aggregated_IF <- cbind(es$inf.function$dynamic.inf.func.e[,1:5], 
+                          (es$inf.function$dynamic.inf.func.e[,6] + es$inf.function$dynamic.inf.func.e[,7])/2)
+
+
+# Now we are ready for the bootstrap procedure
+# We will cluster at unit id level
+set.seed(123)
+es_aggregated_boot <- mboot(es_aggregated_IF, es$DIDparams)
+
+# Now we are ready to go! Let me put all this into a table
+event_study_diff <-  data.frame(
+  type          = "dynamic",
+  event.time= es$egt[1:6], # The last point here is the averaged one. You should modify this in the plots
+  estimate  = es_aggregated,
+  std.error = es_aggregated_boot$se,
+  conf.low  = es_aggregated - es_aggregated_boot$crit.val * es_aggregated_boot$se,
+  conf.high = es_aggregated + es_aggregated_boot$crit.val * es_aggregated_boot$se,
+  point.conf.low  = es_aggregated - stats::qnorm(1 - es$DIDparams$alp/2) * es_aggregated_boot$se,
+  point.conf.high = es_aggregated + stats::qnorm(1 - es$DIDparams$alp/2) * es_aggregated_boot$se
+)
+
+# You can now plot them as you want
+# ggplot2 theme
+theme_set(
+  #theme_clean() + 
+  theme_classic() +
+    theme(plot.background = element_blank(),
+          legend.background = element_rect(color = "white"),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          panel.spacing = unit(10, "lines"))
+)
+
+# This is one option that I sometimes use when the number of event times is relatively large
+p_es_diff1 <- ggplot(data = event_study_diff,
+                     mapping = aes(x = event.time, y = estimate)) +
+  geom_ribbon(aes(ymin= point.conf.low, ymax=  point.conf.high), alpha = 0.5, size = 1, fill = "steelblue")+
+  geom_ribbon(aes(ymin=  conf.low, ymax =  conf.high), alpha =  0.3, size = 1, fill = "steelblue")+
+  geom_line(mapping = aes(x = event.time, y=estimate), colour = "black", size = 0.6, linetype = "dashed") +
+  geom_line(size = 1.2, alpha = 2, colour = "darkblue") +
+  geom_hline(yintercept = 0, colour="black", size = 0.25, linetype = "dotted")+
+  xlab('Event time') +
+  ylab("Event-Study Estimate") +
+  theme(axis.text.y = element_text(size = 9))+
+  theme(axis.text.x = element_text(size = 9)) +
+  theme(axis.title = element_text(color="black",  size = 9))+
+  theme(plot.title=ggtext::element_markdown(size=9,
+                                            #face = "bold",
+                                            color="black",
+                                            hjust=0,
+                                            lineheight=1.2)
+  )
+
+p_es_diff1
+
+
+
+
 ggdid(base_c_est)  +
   annotate("text", x = 9, y = 1500,
            label = paste("ATT:", round(base_c_est$overall.att, 3))) +

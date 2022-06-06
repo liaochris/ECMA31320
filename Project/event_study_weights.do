@@ -21,6 +21,9 @@ rename worked_real worked
 rename unilateraldivorceyear uni_only_year
 gen uni_work_year = uni_only_year * worked
 
+* keep subset
+keep if uni_only_year < 1980
+
 tempfile full
 save `full'
 

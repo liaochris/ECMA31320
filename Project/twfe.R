@@ -4,6 +4,7 @@ library(did)
 library(broom)
 library(tidyverse)
 library(lfe)
+library(tidyverse)
 
 `%ni%` <- Negate(`%in%`)
 rm(list = ls())
@@ -38,7 +39,7 @@ plot_dtwfe <- function(reg_data, controls) {
                                  `treat_dummy 7` + 
                                  `treat_dummy 8` + 
                                  `treat_dummy 9` +
-                                 `treat_dummy 10` | f_id + f_year | 0 | STATE + id)
+                                 `treat_dummy 10` | f_id + f_year + f_state | 0 | STATE + id)
     dyn_est <- felm(formula = formula_felm,
                     data = reg_data, subset = between(Year, 1969, 1989))
   }
@@ -61,7 +62,7 @@ plot_dtwfe <- function(reg_data, controls) {
                                  `treat_dummy 10` +
                                  ann_hrs_work_control + 
                                  labor_inc_control + 
-                                 age_control| f_id + f_year | 0 | STATE + id)
+                                 age_control| f_id + f_year + f_state | 0 | STATE + id)
     dyn_est <- felm(formula = formula_felm,
                     data = reg_data, subset = between(Year, 1969, 1989))
   }
@@ -117,7 +118,11 @@ res_clean_wife <- fread("Data/final_regression_dataset.csv") %>%
 
 # make unit year fixed effects
 res_clean_wife[, `:=` (f_id = factor(id),
-                       f_year = factor(Year))]
+                       f_year = factor(Year),
+                       f_state = factor(STATE))]
+
+# drop late treated states 
+res_clean_wife <- res_clean_wife[`Unilateral Divorce Year` < 1980]
 
 #========== Unilateral divorce ==========
 # define treatment
@@ -137,15 +142,10 @@ for(i in setdiff(end:start, -1)){
   res_clean_wife[[paste0("treat_dummy ", i)]] <- res_clean_wife[["Year"]] - res_clean_wife[["Treatment Year"]] == (i-5)
 }
 
-
-
 # no controls 
 plot_dtwfe(res_clean_wife, 0)
 ggsave("Graphics/dynamic_twfe_uni.png")
 
-# controls 
-plot_dtwfe(res_clean_wife, 1)
-ggsave("Graphics/dynamic_twfe_uni_controls.png")
 
 #========== Unilateral divorce + equitable distribution ==========
 # define treatment 
@@ -166,21 +166,9 @@ for(i in setdiff(end:start, -1)){
 plot_dtwfe(res_clean_wife, 0)
 ggsave("Graphics/dynamic_twfe_equ.png")
 
-# controls 
-plot_dtwfe(res_clean_wife, 1)
-ggsave("Graphics/dynamic_twfe_equ_controls.png")
-
 #========== Unilateral divorce + worked ==========
 # define treatment
 res_clean_wife[, `Treatment Year` := `Unilateral Divorce Year`]
-res_clean_wife[worked == 0, `Treatment Year` := 0]
-
-# make controls the value at year before treatment 
-res_clean_wife[, year_before_treat := (Year == `Treatment Year` -1)]
-res_clean_wife[, `:=`(age_control = max(year_before_treat * AGE),
-                      ann_hrs_work_control = max(year_before_treat * `ANNUAL HOURS WORKED`),
-                      labor_inc_control = max(year_before_treat * `LABOR INCOME`)
-), by = id]
 
 # make treatment indicators
 start <- -5
@@ -189,15 +177,17 @@ for(i in setdiff(end:start, -1)){
   res_clean_wife[[paste0("treat_dummy ", i)]] <- res_clean_wife[["Year"]] - res_clean_wife[["Treatment Year"]] == (i-5)
 }
 
-
+# subset
+treat <- res_clean_wife[Year < `Unilateral Divorce Year` & `Unilateral Divorce Year` != 0, 
+                          all(`ANNUAL HOURS WORKED` > 1200),
+                          by = id][V1 == TRUE, id]
+control <- res_clean_wife[Year <= 1973 & `Unilateral Divorce Year` == 0, 
+                          all(`ANNUAL HOURS WORKED` > 1200), by = id][V1 == TRUE, id]
+res_clean_wife_subset <- res_clean_wife[id %in% c(treat, control)]
 
 # no controls 
-plot_dtwfe(res_clean_wife, 0)
+plot_dtwfe(res_clean_wife_subset, 0)
 ggsave("Graphics/dynamic_twfe_uni_work.png")
-
-# controls 
-plot_dtwfe(res_clean_wife, 1)
-ggsave("Graphics/dynamic_twfe_uni_work_controls.png")
 
 #========== Unilateral divorce + equitable distribution ==========
 # define treatment 
@@ -215,13 +205,17 @@ for(i in setdiff(end:start, -1)){
   res_clean_wife[[paste0("treat_dummy ", i)]] <- res_clean_wife[["Year"]] - res_clean_wife[["Treatment Year"]] == (i-5)
 }
 
-# no controls 
-plot_dtwfe(res_clean_wife, 0)
-ggsave("Graphics/dynamic_twfe_equ_work.png")
+# subset
+treat <- res_clean_wife[Year < `Unilateral Divorce Year` & `Unilateral Divorce Year` != 0, 
+                        all(`ANNUAL HOURS WORKED` > 1200),
+                        by = id][V1 == TRUE, id]
+control <- res_clean_wife[Year <= 1973 & `Unilateral Divorce Year` == 0, 
+                          all(`ANNUAL HOURS WORKED` > 1200), by = id][V1 == TRUE, id]
+res_clean_wife_subset <- res_clean_wife[id %in% c(treat, control)]
 
-# controls 
-plot_dtwfe(res_clean_wife, 1)
-ggsave("Graphics/dynamic_twfe_equ_work_controls.png")
+# no controls 
+plot_dtwfe(res_clean_wife_subset, 0)
+ggsave("Graphics/dynamic_twfe_equ_work.png")
 
 
 

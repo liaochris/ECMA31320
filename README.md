@@ -13,6 +13,7 @@ The folder `Project` contains all the code used for our final project. Our final
 
 All data used is stored in `Data`. Unless otherwise mentioned, all `.csv` and `.dta` suffix files are in `Data` and all 
 
+Note that you should modify the commands that change directories in the `.R` and `.do` scripts - those are customized to my and my co-author's code. 
 
 
  The script `importData.R` prints a list of variable codes that you can request from the PSID data center and `psid_used.csv` which helps map variable codes over time. `psid.csv` is a general codebook obtained from the PSID website. 

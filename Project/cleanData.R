@@ -293,18 +293,19 @@ res_clean[,`AGE` := ifelse(`RELATION TO HEAD` %in% c(3, 30:39), -1,
                                   ifelse(`RELATION TO HEAD` %in% c(1, 10), `AGE HEAD`, `AGE WIFE`),
                                               NaN))]
 
-
+# supplementary columns
 res_clean[, haschild := `CHILDREN COUNT` > 0]
 res_clean[, wife := `RELATION TO HEAD` == 2 | `RELATION TO HEAD` == 1 & `SEX HEAD` == 2 |
             `RELATION TO HEAD` == 20 | `RELATION TO HEAD` == 10 & `SEX HEAD` == 2]
 
+# import data to merge
 divorce_dates <- fread("unilateral_divorce_date.csv")
 states <- fread("PSIDStateCodes.csv", select = c("PSID_code", "State"))
 colnames(divorce_dates)[2:3] <- c("Unilateral Divorce", "Equitable Distribution")
 res_clean <- merge.data.table(res_clean, merge.data.table(divorce_dates, states, by = "State"),
                               by.x = "STATE", by.y = "PSID_code")
 
-
+# export data
 fwrite(res_clean, "cleaned_psid.csv")
 fwrite(all_columns, "documentation.csv")
 

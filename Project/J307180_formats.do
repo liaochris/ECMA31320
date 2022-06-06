@@ -7667,3 +7667,6 @@ label values V9407      V9407L
 label values V9408      V9408L
 label values V9419      V9419L
 label values V9433      V9433L
+
+/// Save data
+save Data\PSID.dta

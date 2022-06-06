@@ -4,9 +4,13 @@ library(xlsx)
 library(tidyr)
 library(stringr)
 
-setwd("~/Google Drive/Academic Work/Sophomore Year/Spring Quarter/Metrics Data Science/ECMA31320/Project/Data/")
+# set working directory
+setwd("~/Google Drive/Academic Work/Sophomore Year/Spring Quarter/
+      Metrics Data Science/ECMA31320/Project/Data/")
 
+# import psid codebook
 psid <- fread("psid.csv")
+# desired columns
 Y1968_codes <- c("ER30004", "ER30005", "ER30008", "ER30019", "ER30001", 
                  "ER30003", "V398", "V117","V118", "V239", "V181", "V119", "V314",
                  "V313", "V246", "V10", 
@@ -20,8 +24,10 @@ Y1975_codes <-  c("V4207", "V4208","V4209","V4210","V4212","V4214","V4211","V421
                   "V3807", "ER30184", "ER30183", "V4145")
 Y1981_codes <- c("V7712", "V7885", "V7713", "V7886", "V7587", "ER30351", "V7555", "V7557")
 
-
-psid <- psid[Y1968 %in% Y1968_codes | Y1969 %in% Y1969_codes | Y1975 %in% Y1975_codes | Y1981 %in% Y1981_codes]
+# generate all codes, separated by space for each data type that we want for 
+# all relevant years
+psid <- psid[Y1968 %in% Y1968_codes | Y1969 %in% Y1969_codes | 
+               Y1975 %in% Y1975_codes | Y1981 %in% Y1981_codes]
 selcols <- paste("Y",1968:1995, sep = "")
 merged <- str_trim(unite(psid[, ..selcols], merged, sep = " ")$merged)
 psid[, final:= merged]

@@ -490,7 +490,7 @@ infix
       ER6999A           3405 - 3405        ER33201           3406 - 3410        ER33202           3411 - 3412  
       ER33203           3413 - 3414        ER33204           3415 - 3417        ER33207           3418 - 3418  
       ER33210           3419 - 3422        ER33279           3423 - 3426   long ER33280           3427 - 3431  
-using [path]\J307180.txt, clear 
+using J307180.txt, clear 
 ;
 label variable ER30000         "RELEASE NUMBER"                           ;
 label variable ER30001         "1968 INTERVIEW NUMBER"                    ;
